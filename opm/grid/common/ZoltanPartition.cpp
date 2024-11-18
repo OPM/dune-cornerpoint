@@ -286,7 +286,7 @@ void setDefaultZoltanParameters(Zoltan_Struct* zz) {
     Zoltan_Set_Param(zz, "CHECK_GRAPH", "2");
     Zoltan_Set_Param(zz,"EDGE_WEIGHT_DIM","0");
     Zoltan_Set_Param(zz, "OBJ_WEIGHT_DIM", "0");
-    Zoltan_Set_Param(zz, "PHG_EDGE_SIZE_THRESHOLD", ".35");  /* 0-remove all, 1-remove none */
+    Zoltan_Set_Param(zz, "PHG_EDGE_SIZE_THRESHOLD", "1");  /* 0-remove all, 1-remove none */
 }
 
 

@@ -1218,10 +1218,10 @@ namespace Dune
         /// \param overlapLayers The number of layers of cells of the overlap region (default: 1).
         /// \param partitionMethod The method used to partition the grid, one of Dune::PartitionMethod
         /// \warning May only be called once.
-        bool loadBalance(int overlapLayers=1, int partitionMethod = Dune::PartitionMethod::zoltan, double imbalanceTol = 1.1)
+        bool loadBalance(int overlapLayers=1, int partitionMethod = Dune::PartitionMethod::zoltan, double imbalanceTol = 1.1, bool addCorners = true)
         {
             using std::get;
-            return get<0>(scatterGrid(defaultTransEdgeWgt, false, nullptr, {}, false, nullptr, true, overlapLayers, partitionMethod, imbalanceTol));
+            return get<0>(scatterGrid(defaultTransEdgeWgt, false, nullptr, {}, false, nullptr, addCorners, overlapLayers, partitionMethod, imbalanceTol));
         }
 
         // loadbalance is not part of the grid interface therefore we skip it.
