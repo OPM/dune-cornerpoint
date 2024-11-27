@@ -50,7 +50,7 @@ struct SubGridPartTraits {
     using IntersectionIterator = typename Grid ::Traits ::LeafIntersectionIterator;
 
     /** \brief type of the collective communication */
-    using CollectiveCommunication = typename Grid ::Traits ::CollectiveCommunication;
+    using CollectiveCommunication = typename Grid ::Traits ::Communication;
 
 
     template <class BaseEntityType>

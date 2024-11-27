@@ -64,7 +64,7 @@ public:
         : fromGrid_(fromGrid), toGrid_(toGrid), data_(data)
     {}
 
-#if DUNE_VERSION_NEWER(DUNE_COMMON, 2, 8)
+#if DUNE_VERSION_GTE(DUNE_COMMON, 2, 8)
     bool fixedSize()
     {
         return data_.fixedSize(3, codim);

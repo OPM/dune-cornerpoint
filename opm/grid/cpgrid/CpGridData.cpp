@@ -946,7 +946,7 @@ struct AttributeDataHandle
           c2e_(cell_to_entity), grid_(grid)
     {}
 
-#if DUNE_VERSION_NEWER(DUNE_COMMON, 2, 8)
+#if DUNE_VERSION_GTE(DUNE_COMMON, 2, 8)
     bool fixedSize()
 #else
         bool fixedsize()
