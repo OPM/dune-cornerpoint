@@ -1,5 +1,6 @@
 /*
   Copyright 2018 SINTEF Digital, Mathematics & Cybernetics.
+  Copyright 2023 Equinor ASA.
 
   This file is part of the Open Porous Media project (OPM).
 
@@ -21,20 +22,21 @@
 #define OPM_CARTESIANTOCOMPRESSED_HEADER_INCLUDED
 
 #include <unordered_map>
+#include <utility>
 
 namespace Opm
 {
 
-    // Construct explicit mapping from local cartesian to active/compressed
-    // indices, either based on global_cell or as { 0, 1, 2, ....} if null.
-    // \param[in] num_cartesian_cells    The number of cartesian cells.
-    // \param[in] global_cell  Either null, or an array of size num_cells.
-    // \return                 A unordered_map containing the mapping from local cartesian
-    //                         to active/compressed,
-    //                         or the map { {0, 0}, {1, 1}, ... , {num_cells - 1, num_cells - 1} }
-    //                         if global_cell was null.
-    std::unordered_map<int, int> cartesianToCompressed(const int num_cells,
-                                                       const int* global_cell);
+// Construct explicit mapping from local cartesian to active/compressed
+// indices, either based on global_cell or as { 0, 1, 2, ....} if null.
+// \param[in] num_cartesian_cells    The number of cartesian cells.
+// \param[in] global_cell  Either null, or an array of size num_cells.
+// \return                 A unordered_multimap containing the mapping from local cartesian
+//                         to active/compressed (Attention! When LGRs, one key takes multiple values),
+//                         or the map { {0, 0}, {1, 1}, ... , {num_cells - 1, num_cells - 1} }
+//                         if global_cell was null.
+std::unordered_multimap<int, int> cartesianToCompressed(const int num_cells,
+                                                        const int* global_cell);
 
 } // namespace Opm
 
