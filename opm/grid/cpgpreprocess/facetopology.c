@@ -64,7 +64,8 @@
 static int *
 computeFaceTopology(const int *a1, const int *a2,
                     const int *b1, const int *b2,
-                    int intersect[4], int *faces)
+                    int intersect[4], int *faces,
+		    bool edge_conformal)
 {
     int mask[8];
     int k;
@@ -139,12 +140,74 @@ computeFaceTopology(const int *a1, const int *a2,
         }
     }
     f = faces;
+    if(!edge_conformal){
     for (k=7; k>=0; --k){
         if(mask[k] != -1){
             *f++ = mask[k];
         }
     }
+    }else{
+        k=7;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }
+        /* intersection top top*/
+	k=6;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }
+        /*upper right*/
+	k=5;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }
+        /* intersection bottom-top or top bottum */
+	k=4;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }
+        /* add possible hanging nodes */
+	
+        if((mask[2] != -1) && (mask[4] != -1)){
+            assert(mask[3] == -1);
+            if((mask[2]-mask[4])> 1){
+                for(zn = mask[4]+1; zn<mask[2]; ++zn){
+                    *f++ = zn;
+                }
+            }
+        }
+	
+        /* lower right */
+	k=3;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }
+	k=2;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }
+	k=1;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }	
+	k=0;
+        if(mask[k] != -1){
+            *f++ = mask[k];
+        }	
+        if((mask[6] != -1) && (mask[0] != -1)){
+            assert(mask[7] == -1);
+            if((mask[0]-mask[6])> 1){
+		fprintf(stdout, "mask 6 %d \n", mask[6]);
+                for(zn = mask[0]-1; zn>mask[6]; --zn){
+                    *f++ = zn;
+		    fprintf(stderr, "adde mpde %d \n", zn);
+                }
+		fprintf(stderr, "mask 0 %d \n", mask[0]);
+            }
+        }
+    }
 
+    
 #if DEBUG>1
     /* Check for repeated nodes:*/
     int i;
@@ -206,7 +269,8 @@ faceintersection(const int *a1, const int *a2,
 void findconnections(int n, int *pts[4],
                      int *intersectionlist,
                      int *work,
-                     struct processed_grid *out)
+                     struct processed_grid *out,
+		     bool edge_conformal)
 {
     /* vectors of point numbers for faces a(b) on pillar 1(2) */
     int *a1 = pts[0];
@@ -332,7 +396,7 @@ void findconnections(int n, int *pts[4],
                             *c++ = cell_a;
                             *c++ = cell_b;
 
-                            f = computeFaceTopology(a1+i, a2+i, b1+j, b2+j, intersect, f);
+                            f = computeFaceTopology(a1+i, a2+i, b1+j, b2+j, intersect, f, edge_conformal);
 
                             out->face_ptr[++out->number_of_faces] = f - out->face_nodes;
                         }

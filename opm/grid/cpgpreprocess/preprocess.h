@@ -94,6 +94,12 @@ extern "C" {
         enum face_tag *face_tag;  /**< Classification of grid's individual
                                        connections (faces). */
 
+	/* add for edge conformal processing */
+	int    *cell_facePos;       /**< Node (vertex) numbers of each face,
+                                       stored sequentially. */
+        int    *cell_faces;         /**< Start position for each face's
+                                       `face_nodes'. */
+
         int    number_of_nodes;   /**< Number of unique grid vertices. */
         int    number_of_nodes_on_pillars; /**< Total number of unique cell
                                                 vertices that lie on pillars. */
@@ -135,7 +141,9 @@ extern "C" {
                        double                 tol,
                        const int             *is_aquifer_cell,
                        struct processed_grid *out,
-                       int                    pinchActive);
+                       int                    pinchActive,
+		       bool edge_conformal
+		       );
 
     /**
      * Release memory resources acquired in previous grid processing using

@@ -39,7 +39,8 @@
 void findconnections(int n, int *pts[4],
                      int *intersectionlist,
                      int *work,
-                     struct processed_grid *out);
+                     struct processed_grid *out,
+		     bool edge_conformal);
 
 #endif /* OPM_FACETOPOLOGY_HEADER */
 
