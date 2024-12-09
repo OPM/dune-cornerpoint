@@ -70,6 +70,8 @@ computeFaceTopology(const int *a1, const int *a2,
     int mask[8];
     int k;
     int *f;
+    int zn;
+    int i;
 
     for (k = 0; k < 8; k++) { mask[k] = -1; }
 
@@ -290,6 +292,7 @@ void findconnections(int n, int *pts[4],
     int i,j=0;
     int intersect[4];
     int *tmp;
+    int zn;
     /* for (i=0; i<2*n; work[i++]=-1); */
 
     for (i = 0; i < 4; i++) { intersect[i] = -1; }

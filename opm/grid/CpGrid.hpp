@@ -243,8 +243,11 @@ namespace Dune
         std::vector<std::size_t>
         processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
                              Opm::EclipseState* ecl_state,
-                             bool periodic_extension, bool turn_normals, bool clip_z,
-                             bool pinchActive);
+                             bool periodic_extension,
+			     bool turn_normals,
+			     bool clip_z,
+                             bool pinchActive,
+			     bool edge_conformal);
 
         /// Read the Eclipse grid format ('grdecl').
         ///
@@ -268,14 +271,14 @@ namespace Dune
         std::vector<std::size_t>
         processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
                              Opm::EclipseState* ecl_state,
-                             bool periodic_extension, bool turn_normals = false, bool clip_z = false);
+                             bool periodic_extension, bool turn_normals = false, bool clip_z = false, bool edge_conformal =false);
 
 #endif
 
         /// Read the Eclipse grid format ('grdecl').
         /// \param input_data the data in grdecl format, declared in preprocess.h.
         /// \param remove_ij_boundary if true, will remove (i, j) boundaries. Used internally.
-        void processEclipseFormat(const grdecl& input_data, bool remove_ij_boundary, bool turn_normals = false);
+      void processEclipseFormat(const grdecl& input_data, bool remove_ij_boundary, bool turn_normals = false, bool edge_conformal = false);
 
         //@}
 

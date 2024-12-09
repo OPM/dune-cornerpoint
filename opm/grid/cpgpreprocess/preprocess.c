@@ -53,20 +53,21 @@ static void
 compute_cell_index(const int dims[3], int i, int j, int *neighbors, int len);
 
 static int
-checkmemory(int nz, struct processed_grid *out, int **intersections);
+checkmemory(int nz, struct processed_grid *out, int **intersections, bool edge_conformal);
 
 static void
 process_vertical_faces(int direction,
                        int **intersections,
                        int *plist, int *work,
-                       struct processed_grid *out);
+                       struct processed_grid *out,bool edge_conformal);
 
 static void
 process_horizontal_faces(int **intersections,
                          int *plist,
                          const int* is_aquifer_cell,
                          struct processed_grid *out,
-                         int pinchActive);
+                         int pinchActive,
+			 bool edge_conformal);
 
 static int
 linearindex(const int dims[3], int i, int j, int k)
@@ -152,9 +153,9 @@ compute_cell_index(const int dims[3], int i, int j,
 /*-----------------------------------------------------------------
   Ensure there's sufficient memory */
 static int
-checkmemory(int nz, struct processed_grid *out, int **intersections)
+checkmemory(int nz, struct processed_grid *out, int **intersections, bool edge_conformal)
 {
-    size_t r, m, n;
+    size_t r, m, n, nx, ny, nc;
     int ok;
 
     /* Ensure there is enough space to manage the (pathological) case
@@ -164,6 +165,11 @@ checkmemory(int nz, struct processed_grid *out, int **intersections)
     r = (2*nz + 2) * (2*nz + 2);
     m = out->m;
     n = out->n;
+    nx = out->dimensions[0];
+    ny = out->dimensions[1];
+    //nz = out->dimension[2];
+    nc = nx*ny*nz;
+    
 
     if (out->number_of_faces +  r > m) {
         m += MAX(m / 2,  2 * r);
@@ -174,7 +180,7 @@ checkmemory(int nz, struct processed_grid *out, int **intersections)
 
     ok = m == ((size_t)(out->m));
     if (! ok) {
-        void *p1, *p2, *p3, *p4;
+        void *p1, *p2, *p3, *p4, *p5, *p6;
 
         p1 = realloc(*intersections     , 4*m   * sizeof **intersections);
         p2 = realloc(out->face_neighbors, 2*m   * sizeof *out->face_neighbors);
@@ -196,7 +202,7 @@ checkmemory(int nz, struct processed_grid *out, int **intersections)
 
         ok = (p1 != NULL) && (p2 != NULL) && (p3 != NULL) && (p4 != NULL);
 	if(edge_conformal){
-	    ok = ok && (p5 != NULL) && (p6 != NULL)
+	    ok = ok && (p5 != NULL) && (p6 != NULL);
 	}
 	
         if (ok) { out->m = m; }
@@ -231,7 +237,8 @@ static void
 process_vertical_faces(int direction,
                        int **intersections,
                        int *plist, int *work,
-                       struct processed_grid *out)
+                       struct processed_grid *out,
+		       bool edge_conformal)
 {
     int i,j;
     int *cornerpts[4];
@@ -256,7 +263,7 @@ process_vertical_faces(int direction,
     for (j = 0; j < ny + direction; ++j) {
         for (i = 0; i < nx + (1 - direction); ++i) {
 
-            if (! checkmemory(nz, out, intersections)) {
+            if (! checkmemory(nz, out, intersections, edge_conformal)) {
                 fprintf(stderr,
                         "Could not allocate enough space in "
                         "process_vertical_faces()\n");
@@ -288,7 +295,7 @@ process_vertical_faces(int direction,
             /* Establish new connections (faces) along pillar pair. */
             findconnections(2*nz + 2, cornerpts,
                             *intersections + 4*num_intersections,
-                            work, out);
+                            work, out, edge_conformal);
 
             /* Start of ->face_neighbors[] for this set of connections. */
             ptr = out->face_neighbors + 2*startface;
@@ -330,7 +337,7 @@ process_horizontal_faces(int **intersections,
                          const int* is_aquifer_cell,
                          struct processed_grid *out,
                          int pinchActive,
-			 bool edge_conformal))
+			 bool edge_conformal)
 {
     int i,j,k;
 
@@ -355,7 +362,7 @@ process_horizontal_faces(int **intersections,
         for (i=0; i<nx; ++i) {
 
 
-            if (! checkmemory(nz, out, intersections)) {
+            if (! checkmemory(nz, out, intersections,edge_conformal)) {
                 fprintf(stderr,
                         "Could not allocate enough space in "
                         "process_horizontal_faces()\n");
@@ -1318,7 +1325,7 @@ int process_grdecl(const struct grdecl   *in,
 
     process_vertical_faces   (0, &intersections, plist, work, out, edge_conformal);
     process_vertical_faces   (1, &intersections, plist, work, out, edge_conformal);
-    process_horizontal_faces (   &intersections, plist, is_aquifer_cell, out, pinchActive); // edge_conformal separately
+    process_horizontal_faces (   &intersections, plist, is_aquifer_cell, out, pinchActive,edge_conformal); // edge_conformal separately argument need for memory allocation
 
     free(work);   work  = NULL;
     free(plist);  plist = NULL;
@@ -1390,7 +1397,7 @@ int process_grdecl(const struct grdecl   *in,
 }
 
 /* ---------------------------------------------------------------------- */
-void free_processed_grid(struct processed_grid *g)
+void free_processed_grid(struct processed_grid *g, bool edge_conformal)
 /* ---------------------------------------------------------------------- */
 {
     if( g ){
@@ -1400,6 +1407,10 @@ void free_processed_grid(struct processed_grid *g)
         free ( g->face_neighbors   );
         free ( g->node_coordinates );
         free ( g->local_cell_index );
+	if(edge_conformal){
+	    free ( g->cell_facePos );
+	    free ( g->cell_faces );
+	}
     }
 }
 

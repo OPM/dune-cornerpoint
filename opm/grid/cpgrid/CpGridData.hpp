@@ -244,7 +244,10 @@ public:
     /// \param periodic_extension if true, the grid will be (possibly) refined, so that
     ///        intersections/faces along i and j boundaries will match those on the other
     ///        side. That is, i- faces will match i+ faces etc.
-    void readEclipseFormat(const std::string& filename, bool periodic_extension, bool turn_normals = false);
+  void readEclipseFormat(const std::string& filename,
+			 bool periodic_extension,
+			 bool turn_normals = false,
+			 bool edge_conformal = false);
 
 #if HAVE_ECL_INPUT
     /// Read the Eclipse grid format ('grdecl').
@@ -255,8 +258,12 @@ public:
     /// \param turn_normals if true, all normals will be turned. This is intended for handling inputs with wrong orientations.
     /// \param clip_z if true, the grid will be clipped so that the top and bottom will be planar.
     /// \param poreVolume pore volumes for use in MINPV processing, if asked for in deck
-    void processEclipseFormat(const Opm::Deck& deck, bool periodic_extension, bool turn_normals = false, bool clip_z = false,
-                              const std::vector<double>& poreVolume = std::vector<double>());
+    void processEclipseFormat(const Opm::Deck& deck,
+			      bool periodic_extension,
+			      bool turn_normals = false,
+			      bool clip_z = false,
+                              const std::vector<double>& poreVolume = std::vector<double>(),
+			      bool edge_conformal =false);
 
     /// Read the Eclipse grid format ('grdecl').
     /// \param ecl_grid the high-level object from opm-parser which represents the simulation's grid
@@ -272,9 +279,13 @@ public:
     /// \param pichActive Whether PINCH keyword was specified
     /// \return A vector of removed cells and created NNCs with transmissibilities die to PINCH item 4 all.
     std::vector<std::size_t>
-    processEclipseFormat(const Opm::EclipseGrid* ecl_grid, Opm::EclipseState* ecl_state,
-                         bool periodic_extension, bool turn_normals = false, bool clip_z = false,
-                         bool pinchActive = true);
+    processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
+			 Opm::EclipseState* ecl_state,
+                         bool periodic_extension,
+			 bool turn_normals = false,
+			 bool clip_z = false,
+                         bool pinchActive = true,
+			 bool edge_conformal = false);
 #endif
 
     /// Read the Eclipse grid format ('grdecl').
@@ -293,8 +304,11 @@ public:
                               Opm::EclipseState* ecl_state,
 #endif
                               std::array<std::set<std::pair<int, int>>, 2>& nnc,
-                              bool remove_ij_boundary, bool turn_normals, bool pinchActive,
-                              double tolerance_unique_points);
+                              bool remove_ij_boundary,
+			      bool turn_normals,
+			      bool pinchActive,
+                              double tolerance_unique_points,
+			      bool edge_conformal);
 
     /// @brief
     ///    Extract Cartesian index triplet (i,j,k) of an active cell.

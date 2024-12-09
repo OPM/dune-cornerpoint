@@ -325,8 +325,9 @@ namespace Dune
      *  \param[in]  poreVolumes  vector with pore volumes (default = empty)
      */
     explicit PolyhedralGrid ( const Opm::EclipseGrid& inputGrid,
-                              const std::vector<double>& poreVolumes = std::vector<double> ())
-    : gridPtr_( createGrid( inputGrid, poreVolumes ) ),
+                              const std::vector<double>& poreVolumes = std::vector<double> (),
+                              bool edge_conformal = false)
+      : gridPtr_( createGrid( inputGrid, poreVolumes, edge_conformal ) ),
       grid_( *gridPtr_ ),
       comm_( MPIHelper::getCommunicator() ),
       leafIndexSet_( *this ),
@@ -887,7 +888,7 @@ namespace Dune
 
   protected:
 #if HAVE_ECL_INPUT
-    UnstructuredGridType* createGrid( const Opm::EclipseGrid& inputGrid, const std::vector< double >& poreVolumes ) const
+    UnstructuredGridType* createGrid( const Opm::EclipseGrid& inputGrid, const std::vector< double >& poreVolumes, bool edge_conformal ) const
     {
         struct grdecl g;
 
@@ -933,7 +934,7 @@ namespace Dune
         }
         */
 
-        UnstructuredGridType* cgrid = create_grid_cornerpoint(&g, z_tolerance);
+        UnstructuredGridType* cgrid = create_grid_cornerpoint(&g, z_tolerance, edge_conformal);
         if (!cgrid) {
             OPM_THROW(std::runtime_error, "Failed to construct grid.");
         }

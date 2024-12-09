@@ -34,7 +34,7 @@
 
 #ifndef OPM_PREPROCESS_HEADER
 #define OPM_PREPROCESS_HEADER
-
+#include <stdbool.h>
 /**
  * \file
  * Low-level corner-point processing routines and supporting data structures.
@@ -155,7 +155,7 @@ extern "C" {
      * @param[in,out] g Prototypical grid representation obtained in an earlier
      *                  call to function process_grdecl().
      */
-    void free_processed_grid(struct processed_grid *g);
+    void free_processed_grid(struct processed_grid *g, bool edge_conformal);
 
 #ifdef __cplusplus
 }
