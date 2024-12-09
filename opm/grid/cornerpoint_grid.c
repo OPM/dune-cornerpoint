@@ -18,6 +18,7 @@
 #include <opm/grid/cornerpoint_grid.h>
 #include <opm/grid/cpgpreprocess/geometry.h>
 #include <opm/grid/cpgpreprocess/preprocess.h>
+#include <opm/grid/cpgpreprocess/make_edge_conformal.hpp>
 #include <opm/grid/UnstructuredGrid.h>
 
 
@@ -175,8 +176,9 @@ create_grid_cornerpoint(const struct grdecl *in, double tol, bool edge_conformal
 
    ok = process_grdecl(in, tol, NULL, &pg, false, edge_conformal);
    if(edge_conformal){
-     //add_cells(&pg);
-     //make edge conformal
+     // if add cells is done one could skip som of the code later
+     add_cells(&pg);
+     make_edge_conformal(&pg);
    }
      
    if (!ok)

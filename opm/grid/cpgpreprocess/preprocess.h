@@ -156,7 +156,7 @@ extern "C" {
      *                  call to function process_grdecl().
      */
     void free_processed_grid(struct processed_grid *g, bool edge_conformal);
-
+    void add_cells(struct processed_grid *grid);
 #ifdef __cplusplus
 }
 #endif

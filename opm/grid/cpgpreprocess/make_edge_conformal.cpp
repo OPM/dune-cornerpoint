@@ -1,3 +1,4 @@
+#include "config.h"
 #include "preprocess.h"
 #include "make_edge_conformal.hpp"
 #include <vector>
@@ -405,7 +406,7 @@ void fix_edges_at_top(const struct processed_grid& grid,
   }
 }//end cell
 
-extern "C" void make_edge_conformal(struct processed_grid* grid){
+void make_edge_conformal(struct processed_grid* grid){
     std::cout << "Fixing edge grid to be edge conformal" << std::endl;
     std::vector<int> nodes;
     std::vector<int> nodePos;
