@@ -58,7 +58,7 @@ std::vector<int> sorted_outer_boundary(const struct processed_grid& grid,
 			   int dir,
 			   int cell){    
   std::vector<std::array<int,2>> edges;
-for(int locind = 0; locind < dir_faces[dir].size(); locind++){
+for(size_t locind = 0; locind < dir_faces[dir].size(); locind++){
 	int hface = dir_hfaces[dir][locind];
 	int face = grid.cell_faces[hface];
         std::vector<std::array<int,2>> face_edges;
@@ -169,7 +169,7 @@ for(int locind = 0; locind < dir_faces[dir].size(); locind++){
 std::vector<int> new_tb(const struct processed_grid& grid,
 			const std::vector<int>& bfnodes_in,
 			const std::vector<int>& sedge, std::array<int,2>& bedge,
-			int fsign,
+			int /*fsign*/,
 			int fsigntb){
 	std::vector<int> newedge;
 	std::vector<int> bfnodes = bfnodes_in;
@@ -406,6 +406,10 @@ void fix_edges_at_top(const struct processed_grid& grid,
   }
 }//end cell
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void make_edge_conformal(struct processed_grid* grid){
     std::cout << "Fixing edge grid to be edge conformal" << std::endl;
     std::vector<int> nodes;
@@ -420,3 +424,6 @@ void make_edge_conformal(struct processed_grid* grid){
       grid->face_nodes[i] = nodes[i];
     }
 }
+#ifdef __cplusplus
+}
+#endif
