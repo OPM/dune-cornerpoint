@@ -429,37 +429,31 @@ void addOverlapLayer(const CpGrid& grid, int index, const CpGrid::Codim<0>::Enti
         for (CpGrid::LeafIntersectionIterator iit = e.ileafbegin(); iit != e.ileafend(); ++iit) {
             if ( iit->neighbor() ) {
                 int faceId = iit->id();
+                int nb_index = ix.index(iit->outside());
+                if ( cell_part[nb_index]!=owner )
+                {
+                    // Note: multiple adds for same process are possible
+                    exportList.emplace_back(nb_index, owner, AttributeSet::copy);
+                    exportList.emplace_back(index, cell_part[nb_index],  AttributeSet::copy);
 
-                // If the transmissibility on a cell interface is zero we do not add the neighbor cell 
-                // to the overlap layer. The reason for this is that
-                // zero transmissibility -> no flux over the face -> zero offdiagonal.
-                // This is a reservoir simulation spesific thing that reduce parallel overhead.
-                if ( trans[faceId] != 0.0 ) {
-                    int nb_index = ix.index(iit->outside());
-                    if ( cell_part[nb_index]!=owner )
+                    if ( recursion_deps>0 )
                     {
-                        // Note: multiple adds for same process are possible
-                        exportList.emplace_back(nb_index, owner, AttributeSet::copy);
-                        exportList.emplace_back(index, cell_part[nb_index],  AttributeSet::copy);
-                        if ( recursion_deps>0 )
+                        // Add another layer
+                        addOverlapLayerNoZeroTrans(grid, nb_index, e, owner, cell_part,
+                                                   exportList, addCornerCells, recursion_deps-1, trans);
+                    }
+                    else if (addCornerCells)
+                    {
+                        // Add cells to the overlap that just share a corner with e.
+                        for (CpGrid::LeafIntersectionIterator iit2 = iit->outside().ileafbegin();
+                             iit2 != iit->outside().ileafend(); ++iit2)
                         {
-                            // Add another layer
-                            addOverlapLayerNoZeroTrans(grid, nb_index, e, owner, cell_part,
-                                                       exportList, addCornerCells, recursion_deps-1, trans);
-                        }
-                        else if (addCornerCells)
-                        {
-                            // Add cells to the overlap that just share a corner with e.
-                            for (CpGrid::LeafIntersectionIterator iit2 = iit->outside().ileafbegin();
-                                 iit2 != iit->outside().ileafend(); ++iit2)
+                            if ( iit2->neighbor() )
                             {
-                                if ( iit2->neighbor() )
-                                {
-                                    int nb_index2 = ix.index(iit2->outside());
-                                    if( cell_part[nb_index2]!=owner ) {
-                                        addOverlapCornerCell(grid, owner, e, iit2->outside(),
-                                                             cell_part, exportList);
-                                    }
+                                int nb_index2 = ix.index(iit2->outside());
+                                if( cell_part[nb_index2]!=owner ) {
+                                    addOverlapCornerCell(grid, owner, e, iit2->outside(),
+                                                         cell_part, exportList);
                                 }
                             }
                         }
