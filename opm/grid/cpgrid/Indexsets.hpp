@@ -42,7 +42,9 @@ along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 #include "Intersection.hpp"
 
 #include <unordered_map>
+#include <cstdint>
 #include <utility>
+#include <cstdint>
 
 namespace Dune
 {
@@ -56,7 +58,7 @@ namespace Dune
         public:
             /// @brief
             /// @todo Doc me!
-            typedef int IndexType;
+            typedef std::int64_t IndexType;
 
             /** \brief Export the type of the entity used as parameter in the index(...) method */
             template <int cc>
@@ -200,7 +202,7 @@ namespace Dune
             friend class Dune::cpgrid::CpGridData;
             //friend class Dune::cpgrid::LevelGlobalIdSet; Not needed due to repeated code in LevelGlobalIdSet (computeId_cell and computeId_point)
         public:
-            typedef int IdType;
+            typedef std::int64_t IdType;
 
             IdSet(const CpGridData& grid)
                 : grid_(grid)
@@ -352,7 +354,7 @@ namespace Dune
             friend class CpGridData;
             friend class ReversePointGlobalIdSet;
         public:
-            typedef int IdType;
+            typedef std::int64_t IdType;
 
             void swap(std::vector<int>& cellMapping,
                       std::vector<int>& faceMapping,

@@ -30,6 +30,7 @@
   along with OPM.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include "config.h"
+#include <type_traits>
 
 #define BOOST_TEST_MODULE LookUpDataPolyhedralGridTest
 #include <boost/test/unit_test.hpp>
@@ -115,23 +116,25 @@ void lookup_check(const Dune::PolyhedralGrid<3,3>& grid)
         BOOST_CHECK(featureInElemDoubleCartesian == lookUpData.getFieldPropIdx(elem) +.5);
         // Search via INDEX
         const auto idx = mapper.index(elem);
+        using IndexType = decltype(idx);
+        using ElementType = std::remove_reference_t<decltype(elem)>;
         const auto featureInElemIDX = lookUpData(idx, fake_feature);
         const auto featureInElemDoubleIDX = lookUpData(idx, fake_feature_double);
         const auto featureInElemCartesianIDX = lookUpCartesianData(idx, fake_feature);
         const auto featureInElemDoubleCartesianIDX = lookUpCartesianData(idx, fake_feature_double);
-        BOOST_CHECK(featureInElemIDX == (lookUpData.getFieldPropIdx<Dune::PolyhedralGrid<3,3>>(idx))+3);
-        BOOST_CHECK(featureInElemDoubleIDX == (lookUpData.getFieldPropIdx<Dune::PolyhedralGrid<3,3>>(idx)) +.5);
-        BOOST_CHECK(featureInElemCartesianIDX == (lookUpData.getFieldPropIdx<Dune::PolyhedralGrid<3,3>>(idx)) +3);
-        BOOST_CHECK(featureInElemDoubleCartesianIDX == (lookUpData.getFieldPropIdx<Dune::PolyhedralGrid<3,3>>(idx)) +.5);
-        BOOST_CHECK(idx == (lookUpData.getFieldPropIdx<Dune::PolyhedralGrid<3,3>>(idx)));
+        BOOST_CHECK(featureInElemIDX == (lookUpData.getFieldPropIdx<IndexType, Dune::PolyhedralGrid<3,3>>(idx))+3);
+        BOOST_CHECK(featureInElemDoubleIDX == (lookUpData.getFieldPropIdx<IndexType, Dune::PolyhedralGrid<3,3>>(idx)) +.5);
+        BOOST_CHECK(featureInElemCartesianIDX == (lookUpData.getFieldPropIdx<IndexType, Dune::PolyhedralGrid<3,3>>(idx)) +3);
+        BOOST_CHECK(featureInElemDoubleCartesianIDX == (lookUpData.getFieldPropIdx<IndexType, Dune::PolyhedralGrid<3,3>>(idx)) +.5);
+        BOOST_CHECK(idx == (lookUpData.getFieldPropIdx<IndexType, Dune::PolyhedralGrid<3,3>>(idx)));
         BOOST_CHECK(featureInElemIDX == featureInElem);
         BOOST_CHECK(featureInElemDoubleIDX == featureInElemDouble);
         BOOST_CHECK(featureInElemCartesianIDX == featureInElemCartesian);
         BOOST_CHECK(featureInElemDoubleCartesianIDX == featureInElemDoubleCartesian);
         // Extra checks related to Cartesian Index
         const auto cartIdx = cartMapper.cartesianIndex(idx);
-        BOOST_CHECK(cartIdx == lookUpCartesianData.getFieldPropCartesianIdx(elem));
-        BOOST_CHECK(cartIdx == lookUpCartesianData.getFieldPropCartesianIdx(idx));
+        BOOST_CHECK(cartIdx == (lookUpCartesianData.getFieldPropCartesianIdx<ElementType, Dune::PolyhedralGrid<3,3>>(elem)));
+        BOOST_CHECK(cartIdx == (lookUpCartesianData.getFieldPropCartesianIdx<IndexType, Dune::PolyhedralGrid<3,3>>(idx)));
         // Extra checks related to Cartesian Coordinate
         std::array<int,3> ijk;
         cartMapper.cartesianCoordinate(idx, ijk);
