@@ -406,6 +406,10 @@ namespace Dune
         ///         The state after globalRefine is comparable to the state after postAdapt.
         void globalRefine (int refCount);
 
+        /*   int setNumCell();
+
+             void setGlobalCell();*/
+
         const std::vector<Dune::GeometryType>& geomTypes(const int) const;
 
         /// given an EntitySeed (or EntityPointer) return an entity object

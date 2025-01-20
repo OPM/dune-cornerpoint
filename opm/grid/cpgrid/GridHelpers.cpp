@@ -22,6 +22,8 @@
 #include <config.h>
 #include <opm/grid/cpgrid/GridHelpers.hpp>
 
+#include <opm/grid/common/CommunicationUtils.hpp>
+
 #include <opm/input/eclipse/EclipseState/Grid/EclipseGrid.hpp>
 
 #include <opm/common/utility/ActiveGridCells.hpp>
@@ -57,10 +59,28 @@ EclipseGrid createEclipseGrid(const Dune::CpGrid& grid, const EclipseGrid& input
 }
 #endif
 
+
 int numCells(const Dune::CpGrid& grid)
 {
+    /* if (grid.maxLevel() && (grid.comm().size()>0)){
+        if (grid.currentData().front()->size(0) == 0)
+        {
+           return grid.setNumCell();
+        }
+        }*/
     return grid.numCells();
 }
+
+/*int tmp_numCells(Dune::CpGrid grid)
+{
+    if (grid.maxLevel() && (grid.comm().size()>0)){
+        if (grid.currentData().front()->size(0) == 0)
+        {
+           return grid.setNumCell();
+        }
+    }
+    return grid.numCells();
+    }*/
 
 int numFaces(const  Dune::CpGrid& grid)
 {
@@ -82,14 +102,40 @@ const int* cartDims(const Dune::CpGrid& grid)
     return &(grid.logicalCartesianSize()[0]);
 }
 
+
+
 const int*  globalCell(const Dune::CpGrid& grid)
 {
-    return &(grid.globalCell()[0]);
+    /* if (grid.maxLevel() && (grid.comm().size()>0)){
+        if (grid.currentData().front()->globalCell().size() == 0)
+        {
+         grid.setGlobalCell();
+        }
+        return &(grid.currentData().front()->globalCell()[0]);
+        }*/
+    return &(grid.globalCell()[0]); // leaf grid view global cell (not necessary Cartesian Grid, if LGRs)
 }
+
+/*const int*  tmp_globalCell(Dune::CpGrid grid)
+{
+    if (grid.maxLevel() && (grid.comm().size()>0)){
+        if (grid.currentData().front()->globalCell().size() == 0)
+        {
+         grid.setGlobalCell();
+        }
+        return &(grid.currentData().front()->globalCell()[0]);
+    }
+    return &(grid.globalCell()[0]); // leaf grid view global cell (not necessary Cartesian Grid, if LGRs)
+}*/
+
 
 #if HAVE_ECL_INPUT
 std::vector<int> createACTNUM(const Dune::CpGrid& grid) {
-    const int* dims = cartDims(grid);
+    const int* dims = cartDims(grid); // for grid with LGRs (no global refinement), returns level zero cartDims.
+    std::cout<< "dims: " << dims[0] << " " << dims[1] << " " << dims[2] << " maxLevel: " << grid.maxLevel() << std::endl;
+    // Dune::CpGrid copyGrid = grid; // non const
+    std::cout<< "globalCell(grid): " << globalCell(grid) << " numCells(grid): " << numCells(grid) <<std::endl;
+    
     return ActiveGridCells(dims[0], dims[1], dims[2], globalCell(grid), numCells(grid)).actNum();
 }
 #endif

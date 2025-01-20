@@ -133,6 +133,7 @@ void refinePatch_and_check(Dune::CpGrid& coarse_grid,
                     BOOST_CHECK(childElem.hasFather() == true);
                     BOOST_CHECK(childElem.level() == lgr);
                     referenceElemOneParent_volume += childElem.geometryInFather().volume();
+                    BOOST_CHECK( childElem.geometryInFather().volume() > 0 );
                     for (int c = 0; c < 3; ++c)  {
                         referenceElem_entity_center[c] += (childElem.geometryInFather().center())[c];
                     }

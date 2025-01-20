@@ -1318,7 +1318,8 @@ void CpGrid::predictMinCellAndPointGlobalIdPerProcess([[maybe_unused]] const std
     // Maximum global id from level zero. (Then, new entities get global id values greater than max_globalId_levelZero).
     // Recall that only cells and points are taken into account; faces are ignored (do not have any global id).
     auto max_globalId_levelZero = comm().max(current_data_->front()->global_id_set_->getMaxGlobalId());
-
+    
+    assert(max_globalId_levelZero  > 0 );
     // Predict how many new cell ids per process are needed.
     std::vector<std::size_t> cell_ids_needed_by_proc(comm().size());
     std::size_t local_cell_ids_needed = 0;
@@ -2458,83 +2459,93 @@ bool CpGrid::adapt(const std::vector<std::array<int,3>>& cells_per_dim_vec,
         /** Warning: due to the overlap layer size (equal to 1) cells that share corners or edges (not faces) with interior cells
             are not included/seen by the process. This, in some cases, ends up in duplicated point ids. */
         //
-        int min_globalId_cell_in_proc = 0;
-        int min_globalId_point_in_proc = 0;
-        predictMinCellAndPointGlobalIdPerProcess(assignRefinedLevel,
-                                                 cells_per_dim_vec,
-                                                 lgr_with_at_least_one_active_cell,
-                                                 min_globalId_cell_in_proc,
-                                                 min_globalId_point_in_proc);
-
-        // Only for level 1,2,.., maxLevel grids.
-        // For each level, define the local-to-global maps for cells and points (for faces: empty).
-        // 1) Assignment of new global ids is done only for owned cells and non-overlap points.
-        // 2) For overlap cells and points: communicate. Not needed under the assumption of fully interior LGRs.
-        std::vector<std::vector<int>> localToGlobal_cells_per_level(cells_per_dim_vec.size());
-        std::vector<std::vector<int>> localToGlobal_points_per_level(cells_per_dim_vec.size());
-        // Ignore faces - empty vectors.
-        std::vector<std::vector<int>> localToGlobal_faces_per_level(cells_per_dim_vec.size());
-
-        assignCellIdsAndCandidatePointIds(localToGlobal_cells_per_level,
-                                          localToGlobal_points_per_level,
-                                          min_globalId_cell_in_proc,
-                                          min_globalId_point_in_proc,
-                                          cells_per_dim_vec);
-
-
-        const auto& parent_to_children = current_data_->front()->parent_to_children_cells_;
-        ParentToChildrenCellGlobalIdHandle parentToChildrenGlobalId_handle(parent_to_children, localToGlobal_cells_per_level);
-        currentData().front()->communicate(parentToChildrenGlobalId_handle,
-                                           Dune::InteriorBorder_All_Interface,
-                                           Dune::ForwardCommunication );
-
-        // After assigning global IDs to points in refined-level grids, a single point may have
-        // a "unique" global ID in each local leaf grid view for every process to which it belongs.
-        // To ensure true uniqueness, since global IDs must be distinct across the global leaf view
-        // and consistent across each refined-level grid, we will rewrite the entries in
-        // localToGlobal_points_per_level.
-        //
-        // This correction is done using cell_to_point_ across all refined cells through
-        // communication: gathering the 8 corner points of each interior cell and scattering the
-        // 8 corner points of overlapping cells, for all child cells of a parent cell in level zero grid.
-        //
-        // Design decision: Why we communicate via level zero grid instead of in each refined level grid.
-        // The reason is that how children are stored (the ordering) in parent_to_children_cells_
-        // is always the same, accross all processes.
-        // Even though the ordering of the corners in cell_to_point_ is the same accross all processes,
-        // this may not be enough to correctly overwrite the "winner" point global ids for refined cells.
-        //
-        /** Current approach avoids duplicated point ids when
-         // 1. the LGR is distributed in P_{i_0}, ..., P_{i_n}, with n+1 < comm().size(),
-         // AND
-         // 2. there is no coarse cell seen by a process P with P != P_{i_j}, j = 0, ..., n.
-         // Otherwise, there will be duplicated point ids.
-         //
-         // Reason: neighboring cells that only share corners (not faces) are NOT considered in the
-         // overlap layer of the process.*/
-        selectWinnerPointIds(localToGlobal_points_per_level,
-                             parent_to_children,
-                             cells_per_dim_vec);
-
-        for (std::size_t level = 1; level < cells_per_dim_vec.size()+1; ++level) {
-            // Global id set for each (refined) level grid.
-            if(lgr_with_at_least_one_active_cell[level-1]>0) { // Check if LGR is active in currect process.
-                (*current_data_)[level]->global_id_set_->swap(localToGlobal_cells_per_level[level-1],
-                                                              localToGlobal_faces_per_level[level-1],
-                                                              localToGlobal_points_per_level[level-1]);
-            }
-        }
-
-        for (std::size_t level = 1; level < cells_per_dim_vec.size()+1; ++level) {
+        //   auto atLeastOneLgr = std::accumulate(lgr_with_at_least_one_active_cell.begin(), lgr_with_at_least_one_active_cell.end(), 0);
+        //   if (atLeastOneLgr) {
             
-            populateCellIndexSetRefinedGrid(level);
-            // Compute the partition type for cell
-            currentData()[level]->computeCellPartitionType();
-            // Compute the partition type for point
-            currentData()[level]->computePointPartitionType();
-            // Now we can compute the communication interface.
-            currentData()[level]->computeCommunicationInterfaces(currentData()[level]->size(3));
-        }
+            int min_globalId_cell_in_proc = 0;
+            int min_globalId_point_in_proc = 0;
+            predictMinCellAndPointGlobalIdPerProcess(assignRefinedLevel,
+                                                     cells_per_dim_vec,
+                                                     lgr_with_at_least_one_active_cell,
+                                                     min_globalId_cell_in_proc,
+                                                     min_globalId_point_in_proc);
+
+            // Only for level 1,2,.., maxLevel grids.
+            // For each level, define the local-to-global maps for cells and points (for faces: empty).
+            // 1) Assignment of new global ids is done only for owned cells and non-overlap points.
+            // 2) For overlap cells and points: communicate. Not needed under the assumption of fully interior LGRs.
+            std::vector<std::vector<int>> localToGlobal_cells_per_level(cells_per_dim_vec.size());
+            std::vector<std::vector<int>> localToGlobal_points_per_level(cells_per_dim_vec.size());
+            // Ignore faces - empty vectors.
+            std::vector<std::vector<int>> localToGlobal_faces_per_level(cells_per_dim_vec.size());
+
+            assignCellIdsAndCandidatePointIds(localToGlobal_cells_per_level,
+                                              localToGlobal_points_per_level,
+                                              min_globalId_cell_in_proc,
+                                              min_globalId_point_in_proc,
+                                              cells_per_dim_vec);
+
+
+            const auto& parent_to_children = current_data_->front()->parent_to_children_cells_;
+            ParentToChildrenCellGlobalIdHandle parentToChildrenGlobalId_handle(parent_to_children, localToGlobal_cells_per_level);
+            currentData().front()->communicate(parentToChildrenGlobalId_handle,
+                                               Dune::InteriorBorder_All_Interface,
+                                               Dune::ForwardCommunication );
+
+            // After assigning global IDs to points in refined-level grids, a single point may have
+            // a "unique" global ID in each local leaf grid view for every process to which it belongs.
+            // To ensure true uniqueness, since global IDs must be distinct across the global leaf view
+            // and consistent across each refined-level grid, we will rewrite the entries in
+            // localToGlobal_points_per_level.
+            //
+            // This correction is done using cell_to_point_ across all refined cells through
+            // communication: gathering the 8 corner points of each interior cell and scattering the
+            // 8 corner points of overlapping cells, for all child cells of a parent cell in level zero grid.
+            //
+            // Design decision: Why we communicate via level zero grid instead of in each refined level grid.
+            // The reason is that how children are stored (the ordering) in parent_to_children_cells_
+            // is always the same, accross all processes.
+            // Even though the ordering of the corners in cell_to_point_ is the same accross all processes,
+            // this may not be enough to correctly overwrite the "winner" point global ids for refined cells.
+            //
+            /** Current approach avoids duplicated point ids when
+             // 1. the LGR is distributed in P_{i_0}, ..., P_{i_n}, with n+1 < comm().size(),
+             // AND
+             // 2. there is no coarse cell seen by a process P with P != P_{i_j}, j = 0, ..., n.
+             // Otherwise, there will be duplicated point ids.
+             //
+             // Reason: neighboring cells that only share corners (not faces) are NOT considered in the
+             // overlap layer of the process.*/
+            selectWinnerPointIds(localToGlobal_points_per_level,
+                                 parent_to_children,
+                                 cells_per_dim_vec);
+
+            for (std::size_t level = 1; level < cells_per_dim_vec.size()+1; ++level) {
+                // Global id set for each (refined) level grid.
+                if(lgr_with_at_least_one_active_cell[level-1]>0) { // Check if LGR is active in currect process.
+                    (*current_data_)[level]->global_id_set_->swap(localToGlobal_cells_per_level[level-1],
+                                                                  localToGlobal_faces_per_level[level-1],
+                                                                  localToGlobal_points_per_level[level-1]);
+                }
+            }
+
+            for (std::size_t level = 1; level < cells_per_dim_vec.size()+1; ++level) {
+            
+                populateCellIndexSetRefinedGrid(level);
+                // Compute the partition type for cell
+                currentData()[level]->computeCellPartitionType();
+                // Compute the partition type for point
+                currentData()[level]->computePointPartitionType();
+                // Now we can compute the communication interface.
+                currentData()[level]->computeCommunicationInterfaces(currentData()[level]->size(3));
+            }
+            //   }
+            //    else
+           //   {
+                                                                                         //   }
+        
+       
+    
 
         populateLeafGlobalIdSet();
 
@@ -2660,6 +2671,23 @@ void CpGrid::addLgrsUpdateLeafView(const std::vector<std::array<int,3>>& cells_p
     Opm::OpmLog::info(std::to_string(current_view_data_->size(0)) + " total cells on the leaf grid view (in " + std::to_string(comm().rank()) + " rank).\n");
 }
 
+/*int CpGrid::setNumCell()
+{
+    auto numCells = comm().max(currentData().front()->size(0));
+    return numCells;
+}
+
+void CpGrid::setGlobalCell()
+{
+    auto global_cell = currentData().front()->globalCell();
+    if (!global_cell.empty())
+        comm().broadcast(&global_cell, global_cell.size(), 0);
+    if (currentData().front()->globalCell().size()==0)
+    {
+        currentData().front()->global_cell_ = global_cell;
+    }
+}
+*/
 
 const std::map<std::string,int>& CpGrid::getLgrNameToLevel() const{
     return lgr_names_;
@@ -3036,6 +3064,9 @@ void CpGrid::identifyRefinedCornersPerLevel(std::map<std::array<int,2>,std::arra
                 }
             } // end-corner-for-loop
         } // end-if-nullptr
+        else {
+            continue;
+        }
     } // end-elem-for-loop
 }
 
@@ -3754,7 +3785,8 @@ void CpGrid::populateRefinedCells(std::vector<Dune::cpgrid::EntityVariableBase<c
                                                                                     markedElem_to_itsLgr[elemLgr], elemLgr);
                     // Get the last LGR (marked element) where the marked face appeared.
                     const int& lastLgrWhereMarkedFaceAppeared = faceInMarkedElemAndRefinedFaces[markedFace].back().first;
-                    const auto& lastAppearanceLgrEquivFace = replaceLgr1FaceIdxByLgr2FaceIdx(cells_per_dim_vec[shiftedLevel], preAdaptFace,
+                    const auto& lastAppearanceLgrEquivFace = replaceLgr1FaceIdxByLgr2FaceIdx(cells_per_dim_vec[shiftedLevel],
+                                                                                             preAdaptFace,
                                                                                              markedElem_to_itsLgr[elemLgr],
                                                                                              cells_per_dim_vec[assignRefinedLevel[lastLgrWhereMarkedFaceAppeared] - preAdaptMaxLevel -1]);
                     refinedFace = elemLgrAndElemLgrFace_to_refinedLevelAndRefinedFace.at({lastLgrWhereMarkedFaceAppeared, lastAppearanceLgrEquivFace})[1];
@@ -4230,9 +4262,18 @@ int CpGrid::getParentFaceWhereNewRefinedFaceLiesOn(const std::array<int,3>& cell
     assert(isRefinedFaceOnLgrBoundary(cells_per_dim, faceIdxInLgr, elemLgr_ptr));
     const auto& ijk = getRefinedFaceIJK(cells_per_dim, faceIdxInLgr, elemLgr_ptr);
     const auto& parentCell_to_face = current_view_data_->cell_to_face_[cpgrid::EntityRep<0>(elemLgr, true)];
+    // I false, I true, J false, J true, K false, K true, if current_view_data_ is level zero
 
     if(parentCell_to_face.size()>6){
-        OPM_THROW(std::logic_error, "The associted parent cell has more than six faces. Refinment/Adaptivity not supported yet.");
+        //OPM_THROW(std::logic_error,
+        const auto& message = "The associted parent cell has more than six faces. Refinment/Adaptivity not supported yet.";
+         if (comm().rank() == 0){
+        OPM_THROW(std::logic_error, message);
+    }
+    else{
+        OPM_THROW_NOLOG(std::logic_error, message);
+    }
+        
     }
 
     // Order defined in Geometry::refine
@@ -4251,31 +4292,38 @@ int CpGrid::getParentFaceWhereNewRefinedFaceLiesOn(const std::array<int,3>& cell
         const auto& faceEntity =  Dune::cpgrid::EntityRep<1>(face.index(), true);
         const auto& faceTag = current_view_data_->face_tag_[faceEntity];
         if (faceIdxInLgr <  refined_k_faces ) { // It's a K_FACE
-            if ((ijk[2] == 0) && (faceTag == 2) && !face.orientation()) { // {K_FACE, false}
+            if ((ijk[2] == cells_per_dim[2]) && (faceTag == 2) && face.orientation()) { // {K_FACE, true}
                 return face.index();
             }
-            if ((ijk[2] == cells_per_dim[2]) && (faceTag == 2) && face.orientation()) { // {K_FACE, true}
+             if ((ijk[2] == 0) && (faceTag == 2) && !face.orientation()) { // {K_FACE, false}
                 return face.index();
             }
         }
         if ((faceIdxInLgr >= refined_k_faces) && (faceIdxInLgr < refined_k_faces + refined_i_faces)) { // It's I_FACE
-            if ((ijk[0] == 0) && (faceTag == 0) && !face.orientation()) { // {I_FACE, false}
+            if ((ijk[0] == cells_per_dim[0]) && (faceTag == 0) && face.orientation()) { // {I_FACE, true}
                 return face.index();
             }
-            if ((ijk[0] == cells_per_dim[0]) && (faceTag == 0) && face.orientation()) { // {I_FACE, true}
+             if ((ijk[0] == 0) && (faceTag == 0) && !face.orientation()) { // {I_FACE, false}
                 return face.index();
             }
         }
         if (faceIdxInLgr >= refined_k_faces + refined_i_faces) {// It's J_FACE
-            if ((ijk[1] == 0) && (faceTag == 1) && !face.orientation()) { // {J_FACE, false}
+            if ((ijk[1] == cells_per_dim[1]) && (faceTag == 1) && face.orientation()) { // {J_FACE, true}
                 return face.index();
             }
-            if ((ijk[1] == cells_per_dim[1]) && (faceTag == 1) && face.orientation()) { // {J_FACE, true}
+             if ((ijk[1] == 0) && (faceTag == 1) && !face.orientation()) { // {J_FACE, false}
                 return face.index();
             }
         }
     }
-    OPM_THROW(std::logic_error, "Cannot find parent face index where the new refined face lays on.");
+    //   OPM_THROW(std::logic_error,
+    const auto& message = "Cannot find parent face index where the new refined face lays on.";
+       if (comm().rank() == 0){
+        OPM_THROW(std::logic_error, message);
+    }
+    else{
+        OPM_THROW_NOLOG(std::logic_error, message);
+    }
 }
 
 int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_per_dim_lgr1, int cornerIdxLgr1, const std::array<int,3>& cells_per_dim_lgr2) const
@@ -4283,7 +4331,7 @@ int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_p
     const auto& ijkLgr1 = getRefinedCornerIJK(cells_per_dim_lgr1, cornerIdxLgr1);
     // Order defined in Geometry::refine
     //  (j*(cells_per_dim[0]+1)*(cells_per_dim[2]+1)) + (i*(cells_per_dim[2]+1)) + k
-    if (ijkLgr1[0] == cells_per_dim_lgr1[0]) {
+    /* if (ijkLgr1[0] == cells_per_dim_lgr1[0]) {
         return   (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + ijkLgr1[2];
     }
     if (ijkLgr1[1] == cells_per_dim_lgr1[1]) {
@@ -4291,13 +4339,50 @@ int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_p
     }
     if (ijkLgr1[2] == cells_per_dim_lgr1[2]) {
         return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1));
+        }*/
+
+
+
+      //
+    // On a parallel run, no symmetry between neighboring elements should be assumed. Therefore, all the six cases
+    // (i = 0, cells_per_dim[0], j = 0, cells_per_dim[1], and k = 0, cells_per_dim[2]) have to be taken into account.
+    // On a serial run, it would be enough to consider i = cells_per_dim[0], j = cells_per_dim[1], and k = cells_per_dim[2].
+    // To cover all possible escenarios, serial and parallel, we consider the six cases.
+    //
+    if (ijkLgr1[0] == cells_per_dim_lgr1[0]) { // same j, k, but i = 0
+        return   (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + ijkLgr1[2];
+    }
+    if (ijkLgr1[1] == cells_per_dim_lgr1[1]) { // same i,k, but j = 0
+        return  (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1)) + ijkLgr1[2];
+    }
+ if (ijkLgr1[2] == cells_per_dim_lgr1[2]) { // same i,j, but k = 0
+        return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1));
+    }
+   if (ijkLgr1[0] == 0) { // same j,k, but i = cells_per_dim[0]
+        return   (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (cells_per_dim_lgr1[0]*(cells_per_dim_lgr2[2]+1))+ ijkLgr1[2];
+    }
+  if (ijkLgr1[1] == 0) { // same i,k, but j = cells_per_Dim[1]
+      return  (cells_per_dim_lgr2[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1)) + ijkLgr1[2];
+  }
+    if (ijkLgr1[2] == 0) { // same i,j, but k = cells_per_dim[2]
+        return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1)) + cells_per_dim_lgr2[2];
     }
     else {
-        OPM_THROW(std::logic_error, "Cannot convert corner index from one LGR to its neighboring LGR.");
+        //  OPM_THROW(std::logic_error,
+        const auto& message = "Cannot convert corner index from one LGR to its neighboring LGR.";
+    if (comm().rank() == 0){
+        OPM_THROW(std::logic_error, message);
+    }
+    else{
+        OPM_THROW_NOLOG(std::logic_error, message);
+    }
     }
 }
 
-int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_per_dim_lgr1, int cornerIdxLgr1, int elemLgr1, int parentFaceLastAppearanceIdx,
+int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_per_dim_lgr1,
+                                                int cornerIdxLgr1,
+                                                int elemLgr1,
+                                                int parentFaceLastAppearanceIdx,
                                                 const std::array<int,3>& cells_per_dim_lgr2) const
 {
     assert(newRefinedCornerLiesOnEdge(cells_per_dim_lgr1, cornerIdxLgr1));
@@ -4308,7 +4393,14 @@ int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_p
     const auto& parentCell_to_face = current_view_data_->cell_to_face_[cpgrid::EntityRep<0>(elemLgr1, true)];
 
     if(parentCell_to_face.size()>6){
-        OPM_THROW(std::logic_error, "The associted parent cell has more than six faces. Refinment/Adaptivity not supported yet.");
+        //OPM_THROW(std::logic_error,
+        const auto& message = "The associted parent cell has more than six faces. Refinment/Adaptivity not supported yet.";
+        if (comm().rank() == 0){
+            OPM_THROW(std::logic_error, message);
+        }
+        else{
+            OPM_THROW_NOLOG(std::logic_error, message);
+        }
     }
     // Since lgr1 is associated with an element index smaller than "a last appearance lgr", then the only possibilities are
     // I_FACE true, J_FACE true, K_FACE true
@@ -4319,7 +4411,7 @@ int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_p
     for (const auto& face : parentCell_to_face) {
         const auto& faceEntity =  Dune::cpgrid::EntityRep<1>(face.index(), true);
         const auto& faceTag = current_view_data_->face_tag_[faceEntity];
-        if (parentFaceLastAppearanceIdx == face.index() && face.orientation()) {
+        /*   if (parentFaceLastAppearanceIdx == face.index() && face.orientation()) {
             if (faceTag == 0) { // I_FACE true
                 // The same new born refined corner will have equal values of j and k, but i == 0 instead of cells_per_dim[0]
                 return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1))  + ijkLgr1[2];
@@ -4331,13 +4423,48 @@ int CpGrid::replaceLgr1CornerIdxByLgr2CornerIdx(const std::array<int,3>& cells_p
             if (faceTag == 2) { // K_FACE true
                 // The same new born refined corner will have equal values of i and j, but k == 0 instead of cells_per_dim[2]
                 return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1));
+                }*/
+             if (parentFaceLastAppearanceIdx == face.index()) {
+            if ( face.orientation() ){
+                if (faceTag == 0) { // I_FACE true. The same new born refined corner will have equal j and k, but i == 0.
+                    return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1))  + ijkLgr1[2];
+                }
+                if (faceTag == 1) {// J_FACE true. The same new born refined corner will have equal i and k, but j == 0.
+                    return  (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1)) + ijkLgr1[2];
+                }
+                if (faceTag == 2) {// K_FACE true. The same new born refined corner will have equal  i and j, but k == 0.
+                    return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1));
+                }
             }
-        }
+            if(!face.orientation()) {
+                if (faceTag == 0) {// I_FACE false. The same new born refined corner will have equal values of j and k, but i == cells_per_dim[0].
+                    return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) +
+                        (cells_per_dim_lgr2[0]*(cells_per_dim_lgr2[2]+1)) +ijkLgr1[2];
+                }
+                if (faceTag == 1) {// J_FACE false. The same new born refined corner will have equal  i and k, but j == cells_per_dim[1].
+                    return   (cells_per_dim_lgr2[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1))
+                        + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1)) + ijkLgr1[2];
+                }
+                if (faceTag == 2) {// K_FACE false.  The same new born refined corner will have equal  i and j, but k == cells_per_dim[2].
+                    return  (ijkLgr1[1]*(cells_per_dim_lgr2[0]+1)*(cells_per_dim_lgr2[2]+1)) + (ijkLgr1[0]*(cells_per_dim_lgr2[2]+1))
+                        + cells_per_dim_lgr2[2];
+                }
+            }
     }
-    OPM_THROW(std::logic_error, "Cannot convert corner index from one LGR to its neighboring LGR.");
+    }
+    
+    //  OPM_THROW(std::logic_error,
+    const auto& message = "Cannot convert corner index from one LGR to its neighboring LGR.";
+    if (comm().rank() == 0){
+        OPM_THROW(std::logic_error, message);
+    }
+    else{
+        OPM_THROW_NOLOG(std::logic_error, message);
+    }
 }
 
-int  CpGrid::replaceLgr1FaceIdxByLgr2FaceIdx(const std::array<int,3>& cells_per_dim_lgr1, int faceIdxInLgr1,
+int  CpGrid::replaceLgr1FaceIdxByLgr2FaceIdx(const std::array<int,3>& cells_per_dim_lgr1,
+                                             int faceIdxInLgr1,
                                              const std::shared_ptr<Dune::cpgrid::CpGridData>& elemLgr1_ptr,
                                              const std::array<int,3>& cells_per_dim_lgr2) const
 {
@@ -4353,28 +4480,44 @@ int  CpGrid::replaceLgr1FaceIdxByLgr2FaceIdx(const std::array<int,3>& cells_per_
     const int& kFacesLgr2 = cells_per_dim_lgr2[0]*cells_per_dim_lgr2[1]*(cells_per_dim_lgr2[2]+1);
     const int& iFacesLgr2 = ((cells_per_dim_lgr2[0]+1)*cells_per_dim_lgr2[1]*cells_per_dim_lgr2[2]);
 
-    if (ijkLgr1[0] == cells_per_dim_lgr1[0]) {
+    const auto& face_lgr1 =  Dune::cpgrid::EntityRep<1>(faceIdxInLgr1, true);
+    const auto& face_tag = elemLgr1_ptr-> face_tag_[face_lgr1];
+
+    if (face_tag == I_FACE) {
         assert( cells_per_dim_lgr1[1] == cells_per_dim_lgr2[1]);
         assert( cells_per_dim_lgr1[2] == cells_per_dim_lgr2[2]);
-        return  kFacesLgr2 + (ijkLgr1[2]*cells_per_dim_lgr2[1]) + ijkLgr1[1];
+        if (ijkLgr1[0] == cells_per_dim_lgr1[0]) { // same j,k, but i = 0
+            return  kFacesLgr2 + (ijkLgr1[2]*cells_per_dim_lgr2[1]) + ijkLgr1[1];
+        }
+        else { // same j,k, but i = cells_per_dim[0]
+            return  kFacesLgr2 + (cells_per_dim_lgr2[0]*cells_per_dim_lgr2[1]*cells_per_dim_lgr2[2])
+                + (ijkLgr1[2]*cells_per_dim_lgr2[1]) + ijkLgr1[1];
+        }
     }
-    if (ijkLgr1[1] == cells_per_dim_lgr1[1]) {
+    if (face_tag == J_FACE) {
         assert( cells_per_dim_lgr1[0] == cells_per_dim_lgr2[0]);
         assert( cells_per_dim_lgr1[2] == cells_per_dim_lgr2[2]);
-        return kFacesLgr2 + iFacesLgr2 + (ijkLgr1[0]*cells_per_dim_lgr2[2]) + ijkLgr1[2];
+        if (ijkLgr1[1] == cells_per_dim_lgr1[1]) { // same i,k, but j = 0
+            return kFacesLgr2 + iFacesLgr2 + (ijkLgr1[0]*cells_per_dim_lgr2[2]) + ijkLgr1[2];
+        }
+        else { // same i,k, but j = cells_per_dim[1]
+            return kFacesLgr2 + iFacesLgr2 + (cells_per_dim_lgr1[1]*cells_per_dim_lgr2[0]*cells_per_dim_lgr2[2])
+                + (ijkLgr1[0]*cells_per_dim_lgr2[2]) + ijkLgr1[2];
+        }
     }
-    if (ijkLgr1[2] == cells_per_dim_lgr1[2]) {
+    if (face_tag == K_FACE) {
         assert( cells_per_dim_lgr1[0] == cells_per_dim_lgr2[0]);
         assert( cells_per_dim_lgr1[1] == cells_per_dim_lgr2[1]);
-        return  (ijkLgr1[1]*cells_per_dim_lgr2[0]) + ijkLgr1[0];
+        if (ijkLgr1[2] == cells_per_dim_lgr1[2]) { // same i,j, but k = 0
+            return  (ijkLgr1[1]*cells_per_dim_lgr2[0]) + ijkLgr1[0];
+        }
+        else{ // same i, j, but k = cells_per_dim[2]
+            return  (cells_per_dim_lgr2[2]*cells_per_dim_lgr2[0]*cells_per_dim_lgr2[1])
+                + (ijkLgr1[1]*cells_per_dim_lgr2[0]) + ijkLgr1[0];
+        }
     }
-    else {
-        OPM_THROW(std::logic_error, "Cannot convert face index from one LGR to its neighboring LGR.");
-    }
+    OPM_THROW(std::logic_error,  "Cannot convert face index from one LGR to its neighboring LGR.");
 }
-
-
-
 
 } // namespace Dune
 
