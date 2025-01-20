@@ -616,7 +616,7 @@ void CpGrid::createCartesian(const std::array<int, 3>& dims,
 #if HAVE_ECL_INPUT
                                              nullptr,
 #endif
-                                             nnc, false, false, false, 0.0);
+                                             nnc, false, false, false, 0.0, /*edge_conformal*/false);// will be edgeconformal anyway
     // global grid only on rank 0
     current_view_data_->ccobj_.broadcast(current_view_data_->logical_cartesian_size_.data(),
                                          current_view_data_->logical_cartesian_size_.size(),
@@ -1863,11 +1863,14 @@ std::vector<std::size_t>
 CpGrid::processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
                              Opm::EclipseState* ecl_state,
                              bool periodic_extension,
-                             bool turn_normals, bool clip_z,
-                             bool pinchActive)
+                             bool turn_normals,
+			     bool clip_z,
+                             bool pinchActive,
+			     bool edge_conformal
+			     )
 {
     auto removed_cells = current_view_data_->processEclipseFormat(ecl_grid, ecl_state, periodic_extension,
-                                                                  turn_normals, clip_z, pinchActive);
+                                                                  turn_normals, clip_z, pinchActive, edge_conformal);
     current_view_data_->ccobj_.broadcast(current_view_data_->logical_cartesian_size_.data(),
                                          current_view_data_->logical_cartesian_size_.size(),
                                          0);
@@ -1877,16 +1880,19 @@ CpGrid::processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
 std::vector<std::size_t>
 CpGrid::processEclipseFormat(const Opm::EclipseGrid* ecl_grid_ptr,
                              Opm::EclipseState* ecl_state,
-                             bool periodic_extension, bool turn_normals, bool clip_z)
+                             bool periodic_extension,
+			     bool turn_normals,
+			     bool clip_z,
+			     bool edge_conformal)
 {
     return processEclipseFormat(ecl_grid_ptr, ecl_state, periodic_extension, turn_normals, clip_z,
-                                !ecl_grid_ptr || ecl_grid_ptr->isPinchActive());
+                                !ecl_grid_ptr || ecl_grid_ptr->isPinchActive(), edge_conformal);
 }
 
 #endif
 
 void CpGrid::processEclipseFormat(const grdecl& input_data,
-                                  bool remove_ij_boundary, bool turn_normals)
+                                  bool remove_ij_boundary, bool turn_normals, bool edge_conformal)
 {
     using NNCMap = std::set<std::pair<int, int>>;
     using NNCMaps = std::array<NNCMap, 2>;
@@ -1896,7 +1902,7 @@ void CpGrid::processEclipseFormat(const grdecl& input_data,
                                              nullptr,
 #endif
                                              nnc,
-                                             remove_ij_boundary, turn_normals, false, 0.0);
+                                             remove_ij_boundary, turn_normals, false, 0.0, edge_conformal);
     current_view_data_->ccobj_.broadcast(current_view_data_->logical_cartesian_size_.data(),
                                          current_view_data_->logical_cartesian_size_.size(),
                                          0);

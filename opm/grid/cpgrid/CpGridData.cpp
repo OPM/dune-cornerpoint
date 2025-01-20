@@ -1642,8 +1642,9 @@ void CpGridData::computePointPartitionType()
             PartitionType old_type=PartitionType(partition_type_indicator_->point_indicator_[*p]);
             if(old_type==InteriorEntity)
             {
-                if(new_type!=OverlapEntity)
+                if(new_type!=OverlapEntity){
                     partition_type_indicator_->point_indicator_[*p]=new_type;
+                }
             }
             if(old_type==OverlapEntity)
                 partition_type_indicator_->point_indicator_[*p]=new_type;

@@ -309,7 +309,7 @@ void addOverlapCornerCell(const CpGrid& grid, int owner,
             {
                 // Note: multiple adds for same process are possible
                 exportList.emplace_back(nb_index, owner, AttributeSet::copy);
-                exportList.emplace_back(my_index, cell_part[nb_index],  AttributeSet::copy);
+                //exportList.emplace_back(my_index, cell_part[nb_index],  AttributeSet::copy);
                 return;
             }
         }
@@ -440,7 +440,7 @@ void addOverlapLayer(const CpGrid& grid, int index, const CpGrid::Codim<0>::Enti
                     {
                         // Note: multiple adds for same process are possible
                         exportList.emplace_back(nb_index, owner, AttributeSet::copy);
-                        exportList.emplace_back(index, cell_part[nb_index],  AttributeSet::copy);
+                        //exportList.emplace_back(index, cell_part[nb_index],  AttributeSet::copy);
                         if ( recursion_deps>0 )
                         {
                             // Add another layer

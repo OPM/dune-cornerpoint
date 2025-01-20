@@ -18,6 +18,7 @@
 #include <opm/grid/cornerpoint_grid.h>
 #include <opm/grid/cpgpreprocess/geometry.h>
 #include <opm/grid/cpgpreprocess/preprocess.h>
+#include <opm/grid/cpgpreprocess/make_edge_conformal.hpp>
 #include <opm/grid/UnstructuredGrid.h>
 
 
@@ -161,7 +162,7 @@ void compute_geometry(struct UnstructuredGrid *g)
 
 
 struct UnstructuredGrid *
-create_grid_cornerpoint(const struct grdecl *in, double tol)
+create_grid_cornerpoint(const struct grdecl *in, double tol, bool edge_conformal)
 {
     struct UnstructuredGrid *g;
    int                      ok;
@@ -173,10 +174,16 @@ create_grid_cornerpoint(const struct grdecl *in, double tol)
        return NULL;
    }
 
-   ok = process_grdecl(in, tol, NULL, &pg, false);
+   ok = process_grdecl(in, tol, NULL, &pg, false, edge_conformal);
+   if(edge_conformal){
+     // if add cells is done one could skip som of the code later
+     add_cells(&pg);
+     make_edge_conformal(&pg);
+   }
+     
    if (!ok)
    {
-       free_processed_grid(&pg);
+     free_processed_grid(&pg, edge_conformal);
        destroy_grid(g);
        return NULL;
    }
@@ -235,7 +242,7 @@ create_grid_cornerpoint(const struct grdecl *in, double tol)
        pg.local_cell_index = NULL;
    }
 
-   free_processed_grid(&pg);
+   free_processed_grid(&pg, edge_conformal);
 
    return g;
 }

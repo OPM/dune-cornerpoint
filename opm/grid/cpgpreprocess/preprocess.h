@@ -34,7 +34,7 @@
 
 #ifndef OPM_PREPROCESS_HEADER
 #define OPM_PREPROCESS_HEADER
-
+#include <stdbool.h>
 /**
  * \file
  * Low-level corner-point processing routines and supporting data structures.
@@ -94,6 +94,12 @@ extern "C" {
         enum face_tag *face_tag;  /**< Classification of grid's individual
                                        connections (faces). */
 
+	/* add for edge conformal processing */
+	int    *cell_facePos;       /**< Node (vertex) numbers of each face,
+                                       stored sequentially. */
+        int    *cell_faces;         /**< Start position for each face's
+                                       `face_nodes'. */
+
         int    number_of_nodes;   /**< Number of unique grid vertices. */
         int    number_of_nodes_on_pillars; /**< Total number of unique cell
                                                 vertices that lie on pillars. */
@@ -135,7 +141,9 @@ extern "C" {
                        double                 tol,
                        const int             *is_aquifer_cell,
                        struct processed_grid *out,
-                       int                    pinchActive);
+                       int                    pinchActive,
+		       bool edge_conformal
+		       );
 
     /**
      * Release memory resources acquired in previous grid processing using
@@ -147,8 +155,8 @@ extern "C" {
      * @param[in,out] g Prototypical grid representation obtained in an earlier
      *                  call to function process_grdecl().
      */
-    void free_processed_grid(struct processed_grid *g);
-
+    void free_processed_grid(struct processed_grid *g, bool edge_conformal);
+    void add_cells(struct processed_grid *grid);
 #ifdef __cplusplus
 }
 #endif

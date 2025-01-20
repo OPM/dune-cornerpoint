@@ -68,7 +68,7 @@ extern "C" {
      * destroy_grid().
      */
     struct UnstructuredGrid *
-    create_grid_cornerpoint(const struct grdecl *in, double tol);
+    create_grid_cornerpoint(const struct grdecl *in, double tol, bool edge_conformal);
 
 
     /**

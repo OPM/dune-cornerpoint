@@ -125,7 +125,7 @@ namespace cpgrid
     CpGridData::processEclipseFormat(const Opm::EclipseGrid* ecl_grid_ptr,
                                      Opm::EclipseState* ecl_state,
                                      bool periodic_extension, bool turn_normals, bool clip_z,
-                                     bool pinchActive)
+                                     bool pinchActive, bool edge_conformal)
     {
         std::vector<std::size_t> removed_cells;
 
@@ -393,10 +393,10 @@ namespace cpgrid
             grdecl new_g;
             addOuterCellLayer(g, new_coord, new_zcorn, new_actnum, new_g);
             // Make the grid.
-            processEclipseFormat(new_g, ecl_state, nnc_cells, true, turn_normals, pinchActive, tolerance_unique_points);
+            processEclipseFormat(new_g, ecl_state, nnc_cells, true, turn_normals, pinchActive, tolerance_unique_points,/*edge_conformal*/ false);// maybe need at some point?
         } else {
             // Make the grid.
-            processEclipseFormat(g, ecl_state, nnc_cells, false, turn_normals, pinchActive, tolerance_unique_points);
+	  processEclipseFormat(g, ecl_state, nnc_cells, false, turn_normals, pinchActive, tolerance_unique_points, edge_conformal);
         }
 
         return minpv_result.removed_cells;
@@ -414,7 +414,8 @@ namespace cpgrid
 #endif
                                           NNCMaps& nnc, bool remove_ij_boundary, bool turn_normals,
                                           bool pinchActive,
-                                          double tolerance_unique_points)
+                                          double tolerance_unique_points,
+					  bool edge_conformal)
     {
         if( ccobj_.rank() != 0 )
         {
@@ -436,11 +437,11 @@ namespace cpgrid
             for ([[maybe_unused]]const auto&[global_index, volume] : aquifer_cell_volumes) {
                 is_aquifer_cell[global_index] = 1;
             }
-            process_ok = process_grdecl(&input_data, tolerance_unique_points, is_aquifer_cell.data(), &output, pinchActive);
+            process_ok = process_grdecl(&input_data, tolerance_unique_points, is_aquifer_cell.data(), &output, pinchActive, edge_conformal);
         } else
 #endif
         {
-            process_ok = process_grdecl(&input_data, tolerance_unique_points, nullptr, &output, pinchActive);
+	  process_ok = process_grdecl(&input_data, tolerance_unique_points, nullptr, &output, pinchActive, edge_conformal);
         }
 
         if (process_ok == 0) {
@@ -526,7 +527,7 @@ namespace cpgrid
         std::cout << "Cleaning up." << std::endl;
 #endif
         // Clean up the output struct.
-        free_processed_grid(&output);
+        free_processed_grid(&output, edge_conformal);
 
         computeUniqueBoundaryIds();
 
