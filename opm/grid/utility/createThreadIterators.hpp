@@ -29,41 +29,66 @@ namespace Opm
 {
 
     /// Create a vector containing a spread of iterators into the
-    /// elements of the grid view, to facilitate for example OpenMP
+    /// elements of the range, to facilitate for example OpenMP
     /// parallelization of iterations over the elements.
-    /// \param[in]  gv             Grid view to be iterated over.
+    /// While the original range may have only forward iterators to
+    /// the individual elements, the returned vector will provide
+    /// random access to the chunks.
+    /// \tparam     Range          Range of elements that supports (multipass) forward iteration.
+    /// \param[in]  r              Range to be iterated over.
+    /// \param[in]  num_elem       The number of elements in r.
     /// \param[in]  num_threads    The number of threads to target.
     /// \param[in]  max_chunk_size The maximum allowed chunk size.
     /// \param[out] chunk_size     The chunk size found by the algorithm.
-    /// \return                    A vector of iterators, with the grid view's begin and end iterators
+    /// \return                    A vector of iterators, with the range's begin and end iterators
     ///                            being the first and last ones, and filling in iterators in between
     ///                            such that the distance from one to the next is chunk_size, except
     ///                            for possibly the last interval. If num_threads is 1, there will only
     ///                            be the begin and end iterators and no chunks in between.
-    template <class GridView>
-    auto createThreadIterators(const GridView& gv, const int num_threads, const int max_chunk_size, int& chunk_size)
+    template <class Range>
+    auto createThreadIterators(const Range& r,
+                               const std::size_t num_elem,
+                               const std::size_t num_threads,
+                               const std::size_t max_chunk_size,
+                               std::size_t& chunk_size)
     {
         if (num_threads < 1) {
-            throw std::logic_error("createThreadIterators() called with num_threads arguments = " + std::to_string(num_threads));
+            throw std::logic_error("createThreadIterators() called with num_threads arguments = "
+                                   + std::to_string(num_threads));
         }
-        std::vector<typename GridView::template Codim<0>::Iterator> grid_chunk_iterators;
-        auto it = gv.template begin<0>();
-        const auto end = gv.template end<0>();
+        std::vector<decltype(std::begin(r))> chunk_iterators;
+        auto it = std::begin(r);
+        const auto end = std::end(r);
         if (num_threads == 1) {
-            grid_chunk_iterators.push_back(it);
-            grid_chunk_iterators.push_back(end);
+            chunk_iterators.push_back(it);
+            chunk_iterators.push_back(end);
         } else {
-            const auto num_elements = gv.size(0);
-            chunk_size = std::clamp(num_elements / num_threads, 1, max_chunk_size);
-            grid_chunk_iterators.reserve(num_elements / chunk_size + 2);
+            chunk_size = std::clamp(num_elem / num_threads, 1ul, max_chunk_size);
+            chunk_iterators.reserve(num_elem / chunk_size + 2);
             for (int count = 0; it != end; ++it, ++count) {
                 if (count % chunk_size == 0) {
-                    grid_chunk_iterators.push_back(it);
+                    chunk_iterators.push_back(it);
                 }
             }
-            grid_chunk_iterators.push_back(end);
+            chunk_iterators.push_back(end);
         }
-        return grid_chunk_iterators;
+        return chunk_iterators;
+    }
+
+
+    /// Convenience function for using createThreadIterators() with
+    /// the cells in a grid view.
+    template <class GridView>
+    auto createThreadIterators(const GridView& gv,
+                               const std::size_t num_threads,
+                               const std::size_t max_chunk_size,
+                               std::size_t& chunk_size)
+    {
+        return createThreadIterators(elements(gv),
+                                     gv.size(0),
+                                     num_threads,
+                                     max_chunk_size,
+                                     chunk_size);
     }
 
 } // namespace Opm
