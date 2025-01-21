@@ -41,6 +41,7 @@
 #include <dune/geometry/type.hh>
 #include <dune/grid/common/gridenums.hh>
 
+#include <opm/grid/UnstructuredGrid.h>
 #include "PartitionTypeIndicator.hpp"
 #include <opm/grid/cpgrid/DefaultGeometryPolicy.hpp>
 
@@ -196,7 +197,7 @@ public:
     }
 
     /// @brief Return the number of all subentities of the entity of a given codimension cc.
-    unsigned int subEntities ( const unsigned int cc ) const;
+    grid_size_t subEntities ( const grid_size_t cc ) const;
 
     /// @brief Obtain subentity.
     ///        Example: If cc = 3 and i = 5, it returns the 5th corner/vertex of the entity.
@@ -369,7 +370,7 @@ namespace Dune {
 namespace cpgrid {
 
 template<int codim>
-unsigned int Entity<codim>::subEntities ( const unsigned int cc ) const
+grid_size_t Entity<codim>::subEntities ( const grid_size_t cc ) const
 {
     if (cc == codim) {
         return 1;

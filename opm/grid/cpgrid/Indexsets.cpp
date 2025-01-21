@@ -44,7 +44,7 @@ namespace Dune
 {
 namespace cpgrid
 {
-IndexSet::IndexType IndexSet::subIndex(const cpgrid::Entity<0>& e, int i, unsigned int cc) const
+IndexSet::IndexType IndexSet::subIndex(const cpgrid::Entity<0>& e, int i, grid_size_t cc) const
 {
     switch(cc) {
     case 0: return index(e.subEntity<0>(i));

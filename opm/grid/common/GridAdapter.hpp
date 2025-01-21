@@ -182,10 +182,10 @@ private:
     UnstructuredGrid g_;
     // Topology storage.
     std::vector<int> face_nodes_;
-    std::vector<unsigned> face_nodepos_;
+    std::vector<grid_size_t> face_nodepos_;
     std::vector<int> face_cells_;
     std::vector<int> cell_faces_;
-    std::vector<unsigned> cell_facepos_;
+    std::vector<grid_size_t> cell_facepos_;
     // Geometry storage.
     std::vector<double> node_coordinates_;
     std::vector<double> face_centroids_;

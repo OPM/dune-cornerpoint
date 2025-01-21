@@ -197,7 +197,7 @@ allocate_grid_from_file(FILE *fp, int *has_tag, int *has_indexmap)
     struct UnstructuredGrid *G;
 
     int           save_errno;
-    unsigned long tmp;
+    grid_size_t tmp;
     size_t        dimens[GRID_NMETA], i;
 
     save_errno = errno;

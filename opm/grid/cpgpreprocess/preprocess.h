@@ -34,6 +34,7 @@
 
 #ifndef OPM_PREPROCESS_HEADER
 #define OPM_PREPROCESS_HEADER
+#include <opm/grid/grid_size.h>
 
 /**
  * \file
@@ -83,11 +84,11 @@ extern "C" {
 
         int    dimensions[3];     /**< Cartesian box dimensions. */
 
-        unsigned number_of_faces;   /**< Total number of unique grid faces
+        grid_size_t number_of_faces;   /**< Total number of unique grid faces
                                        (i.e., connections). */
         int    *face_nodes;       /**< Node (vertex) numbers of each face,
                                        stored sequentially. */
-        unsigned int    *face_ptr;         /**< Start position for each face's
+        grid_size_t    *face_ptr;         /**< Start position for each face's
                                        `face_nodes'. */
         int    *face_neighbors;   /**< Global cell numbers.  Two elements per
                                        face, stored sequentially. */

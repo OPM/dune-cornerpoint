@@ -234,7 +234,7 @@ fill_cart_topology_3d(struct UnstructuredGrid *G)
     int i,j,k;
 
     int *cfaces, *fnodes, *fcells;
-    unsigned *fnodepos, *cfacepos;
+    grid_size_t *fnodepos, *cfacepos;
 
     nx = G->cartdims[0];
     ny = G->cartdims[1];
@@ -550,7 +550,7 @@ fill_cart_topology_2d(struct UnstructuredGrid *G)
     int    Nx;
 
     int    *fnodes, *fcells, *cfaces;
-    unsigned *cfacepos, *fnodepos;
+    grid_size_t *cfacepos, *fnodepos;
 
     cfaces     = G->cell_faces;
     cfacepos   = G->cell_facepos;

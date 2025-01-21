@@ -33,6 +33,8 @@
 #include <dune/common/parallel/mpicommunication.hh>
 #endif
 
+#include <opm/grid/grid_size.h>
+
 namespace Dune
 {
   class SimpleMessageBuffer
@@ -232,7 +234,7 @@ public:
     inline void computeDestinations( const linkage_t& linkage, vector_t& dest );
 
     // return new tag number for the exchange messages
-    int getMessageTag(const unsigned int increment) const
+    int getMessageTag(const grid_size_t increment) const
     {
       const int retTag = this->tag_;
       this->generateNextMessageTag(increment);
@@ -248,7 +250,7 @@ public:
   private:
     mutable int tag_{messagetag + 2};
 
-    void generateNextMessageTag(const unsigned int increment) const
+    void generateNextMessageTag(const grid_size_t increment) const
     {
       this->tag_ += increment;
 

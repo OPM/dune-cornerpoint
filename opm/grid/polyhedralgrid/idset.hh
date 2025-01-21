@@ -65,7 +65,7 @@ namespace Dune
 
     //! subId method for entities
     template< class Entity >
-    IdType subId ( const Entity &entity, int i, unsigned int codim ) const
+    IdType subId ( const Entity &entity, int i, grid_size_t codim ) const
     {
       if( codim == 0 )
         return id( entity );

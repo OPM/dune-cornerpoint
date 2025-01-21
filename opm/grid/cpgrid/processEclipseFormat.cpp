@@ -828,7 +828,7 @@ namespace cpgrid
             }
 
             // Part 3, modfying the face->cell connections.
-            for (unsigned i = 0; i < 2*grid.number_of_faces; ++i) {
+            for (grid_size_t i = 0; i < 2*grid.number_of_faces; ++i) {
                 int old_index = grid.face_neighbors[i];
                 if (old_index != -1) {
                     int old_lcart = grid.local_cell_index[old_index];
@@ -1123,7 +1123,7 @@ namespace cpgrid
 
             // Build face to point
             const int* fn = output.face_nodes;
-            const unsigned* fp = output.face_ptr;
+            const grid_size_t* fp = output.face_ptr;
             for (int face = 0; face < num_faces; ++face) {
                 int output_face = face_to_output_face[face];
                 if (output_face == cpgrid::NNCFace) {
@@ -1285,7 +1285,7 @@ namespace cpgrid
             // \TODO Use exact geometry instead of these approximations.
             int nf = face_to_output_face.size();
             const int* fn = output.face_nodes;
-            const unsigned* fp = output.face_ptr;
+            const grid_size_t* fp = output.face_ptr;
             for (int face = 0; face < nf; ++face) {
                 // Computations in this loop could be speeded up
                 // by doing more of them simultaneously.

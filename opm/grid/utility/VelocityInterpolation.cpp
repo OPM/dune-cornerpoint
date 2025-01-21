@@ -65,7 +65,7 @@ namespace Opm
         const int dim = grid_.dimensions;
         std::fill(v, v + dim, 0.0);
         const double* cc = grid_.cell_centroids + cell*dim;
-        for (unsigned hface = grid_.cell_facepos[cell]; hface < grid_.cell_facepos[cell+1]; ++hface) {
+        for (grid_size_t hface = grid_.cell_facepos[cell]; hface < grid_.cell_facepos[cell+1]; ++hface) {
             const int face = grid_.cell_faces[hface];
             const double* fc = grid_.face_centroids + face*dim;
             double face_flux = 0.0;

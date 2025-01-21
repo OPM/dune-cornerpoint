@@ -54,7 +54,7 @@ struct ExtractColumnCompare
 /// \return true if two cells are neighbours.
 bool neighbours(const UnstructuredGrid& grid, const int c0, const int c1)
 {
-    for (unsigned hf = grid.cell_facepos[c0]; hf < grid.cell_facepos[c0 + 1]; ++hf) {
+    for (grid_size_t hf = grid.cell_facepos[c0]; hf < grid.cell_facepos[c0 + 1]; ++hf) {
         const int f = grid.cell_faces[hf];
         if (grid.face_cells[2*f] == c1 || grid.face_cells[2*f+1] == c1) {
             return true;

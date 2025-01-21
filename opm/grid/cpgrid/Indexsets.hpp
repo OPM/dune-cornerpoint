@@ -166,11 +166,11 @@ namespace Dune
             /// @tparam
             /// @return
             /// @param
-            IndexType subIndex(const cpgrid::Entity<0>& e, int i, unsigned int cc) const;
+            IndexType subIndex(const cpgrid::Entity<0>& e, int i, grid_size_t cc) const;
 
 
             template<int codim>
-	    IndexType subIndex(const cpgrid::Entity<codim>& /* e */, int /* i */, unsigned int /* cc */) const
+	    IndexType subIndex(const cpgrid::Entity<codim>& /* e */, int /* i */, grid_size_t /* cc */) const
 	    {
 	      DUNE_THROW(NotImplemented, "subIndex not implemented for codim"
 			 << codim << "entities.");

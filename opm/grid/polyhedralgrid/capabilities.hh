@@ -9,6 +9,8 @@
 //- dune-metagrid includes
 #include <opm/grid/polyhedralgrid/declaration.hh>
 
+//#include <opm/grid/grid_size.h>
+
 namespace Dune
 {
 
@@ -22,7 +24,7 @@ namespace Dune
     struct hasSingleGeometryType< PolyhedralGrid< dim, dimworld, coord_t > >
     {
       static const bool v = false;
-      static const unsigned int topologyId = ~0u;
+      static const size_t topologyId = ~0u;
     };
 
 

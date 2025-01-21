@@ -9,6 +9,8 @@
 //- dune-grid includes
 #include <dune/grid/common/entity.hh>
 
+#include <opm/grid/grid_size.h>
+
 namespace Dune
 {
 
@@ -176,7 +178,7 @@ namespace Dune
     : Base( data_param, seed )
     {}
 
-    unsigned int subEntities( const unsigned int cd ) const
+    grid_size_t subEntities( const grid_size_t cd ) const
     {
       if( cd == Base :: codimension )
         return 1;
@@ -271,7 +273,7 @@ namespace Dune
     This& dereference()
     { return *this; }
 
-    unsigned int subEntities( const unsigned int codim ) const
+    grid_size_t subEntities( const grid_size_t codim ) const
     {
       if( codim == 0 )
         return 1;

@@ -50,7 +50,7 @@ namespace Opm
         const int num_faces = numFaces(grid);
         const auto fc = faceCells(grid);
         for (int face = 0; face < num_faces; ++face) {
-            for (unsigned nodepos = grid.face_nodepos[face]; nodepos < grid.face_nodepos[face + 1]; ++nodepos) {
+            for (grid_size_t nodepos = grid.face_nodepos[face]; nodepos < grid.face_nodepos[face + 1]; ++nodepos) {
                 const int vertex = grid.face_nodes[nodepos];
                 for (int face_nb = 0; face_nb < 2; ++face_nb) {
                     const int face_nb_cell = fc(face, face_nb);
@@ -78,7 +78,7 @@ namespace Opm
             const int num_cell_faces = cell_faces.size();
             for (int local_face = 0; local_face < num_cell_faces; ++local_face) {
                 const int face = cell_faces[local_face];
-                for (unsigned nodepos = grid.face_nodepos[face]; nodepos < grid.face_nodepos[face + 1]; ++nodepos) {
+                for (grid_size_t nodepos = grid.face_nodepos[face]; nodepos < grid.face_nodepos[face + 1]; ++nodepos) {
                     const int vertex = grid.face_nodes[nodepos];
                     nb.insert(v2c[vertex].begin(), v2c[vertex].end());
                 }

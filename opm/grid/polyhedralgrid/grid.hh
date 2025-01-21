@@ -1125,7 +1125,7 @@ namespace Dune
       return -(idx+1); // +1 to include 0 boundary segment index
     }
 
-    const std::vector< GeometryType > &geomTypes ( const unsigned int codim ) const
+    const std::vector< GeometryType > &geomTypes ( const grid_size_t codim ) const
     {
       static std::vector< GeometryType > emptyDummy;
       if (codim < geomTypes_.size())
@@ -1372,12 +1372,12 @@ namespace Dune
 
           std::vector< vertexmap_t > cell_pts( dim*2 );
 
-          for (unsigned hf = grid_.cell_facepos[ c ]; hf < grid_.cell_facepos[c+1]; ++hf)
+          for (grid_size_t hf = grid_.cell_facepos[ c ]; hf < grid_.cell_facepos[c+1]; ++hf)
           {
             const int f = grid_.cell_faces[ hf ];
             const int faceTag = grid_.cell_facetag[ hf ];
 
-            for (unsigned nodepos = grid_.face_nodepos[f]; nodepos < grid_.face_nodepos[f+1]; ++nodepos )
+            for (grid_size_t nodepos = grid_.face_nodepos[f]; nodepos < grid_.face_nodepos[f+1]; ++nodepos )
             {
               const int node = grid_.face_nodes[ nodepos ];
               iterator it = cell_pts[ faceTag ].find( node );
@@ -1448,7 +1448,7 @@ namespace Dune
         for (int c = 0; c < numCells; ++c)
         {
           std::set<int> cell_pts;
-          for (unsigned hf = grid_.cell_facepos[ c ]; hf < grid_.cell_facepos[c+1]; ++hf)
+          for (grid_size_t hf = grid_.cell_facepos[ c ]; hf < grid_.cell_facepos[c+1]; ++hf)
           {
              int f = grid_.cell_faces[ hf ];
              const int* fnbeg = grid_.face_nodes + grid_.face_nodepos[f];

@@ -234,7 +234,7 @@ namespace Dune
         // insert faces with type none/dim-1
         GeometryType type;
         type = Dune::GeometryTypes::none(Grid::dimension-1);
-        std::vector< unsigned int > numbers;
+        std::vector< grid_size_t > numbers;
 
         const int nFaces = faces.size();
         for(int i = 0; i < nFaces; ++ i )
@@ -281,7 +281,7 @@ namespace Dune
             std::cout << std::endl;
           }
 
-          const unsigned int nVx = dgf.elements[ 0 ].size();
+          const grid_size_t nVx = dgf.elements[ 0 ].size();
 
           typedef std::vector< int > face_t;
           std::map< face_t, int > tmpFaces;

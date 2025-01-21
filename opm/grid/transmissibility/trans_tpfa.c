@@ -25,7 +25,7 @@ tpfa_htrans_compute(struct UnstructuredGrid *G, const double *perm, double *htra
     
     int    c, d, f, j;
     double s, dist, denom;
-    unsigned i;
+    grid_size_t i;
 
     double Kn[3];
     double *cc, *fc, *n;
@@ -80,7 +80,7 @@ tpfa_trans_compute(struct UnstructuredGrid *G, const double *htrans, double *tra
     #endif
     
     int c, f;
-    unsigned i;
+    grid_size_t i;
 
     for (f = 0; f < G->number_of_faces; f++) {
         trans[f] = 0.0;
@@ -113,7 +113,7 @@ tpfa_eff_trans_compute(struct UnstructuredGrid       *G,
     #endif
     
     int c, f;
-    unsigned i;
+    grid_size_t i;
 
     for (f = 0; f < G->number_of_faces; f++) {
         trans[f] = 0.0;

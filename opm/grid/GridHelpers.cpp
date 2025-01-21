@@ -85,10 +85,10 @@ double cellCenterDepth(const UnstructuredGrid& grid, int cell_index)
     const int nv = 8; // Assuming 2*4 vertices ...
     double zz = 0.0;
     // Traverse the bottom and top cell-face
-    for (unsigned i = grid.cell_facepos[cell_index+1] - 2; i < grid.cell_facepos[cell_index+1]; ++i) {
+    for (grid_size_t i = grid.cell_facepos[cell_index+1] - 2; i < grid.cell_facepos[cell_index+1]; ++i) {
         // Traverse the vertices associated with each face
         assert(grid.face_nodepos[grid.cell_faces[i]+1] - grid.face_nodepos[grid.cell_faces[i]] == nv/2);
-        for (unsigned j = grid.face_nodepos[grid.cell_faces[i]]; j < grid.face_nodepos[grid.cell_faces[i]+1]; ++j) {
+        for (grid_size_t j = grid.face_nodepos[grid.cell_faces[i]]; j < grid.face_nodepos[grid.cell_faces[i]+1]; ++j) {
             zz += (grid.node_coordinates+nd*(grid.face_nodes[j]))[nd-1];
         }
     }
@@ -112,7 +112,7 @@ Dune::FieldVector<double,3> faceCenterEcl(const UnstructuredGrid& grid, int cell
     Dune::FieldVector<double,3> center(0.0);
     //Vector center(0.0);
     // Traverse the bottom and top cell-face
-    for (unsigned i = grid.cell_facepos[cell_index+1] - 2; i < grid.cell_facepos[cell_index+1]; ++i) {
+    for (grid_size_t i = grid.cell_facepos[cell_index+1] - 2; i < grid.cell_facepos[cell_index+1]; ++i) {
         // Traverse the vertices associated with each face
         assert(grid.face_nodepos[grid.cell_faces[i]+1] - grid.face_nodepos[grid.cell_faces[i]] == nv);
 

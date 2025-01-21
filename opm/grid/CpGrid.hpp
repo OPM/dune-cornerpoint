@@ -1193,20 +1193,20 @@ namespace Dune
         std::vector<std::array<int,2>> mapLeafIndexSetToLocalCartesianIndexSets() const;
 
         /// \brief Size of the overlap on the leaf level
-        unsigned int overlapSize(int) const;
+        grid_size_t overlapSize(int) const;
 
 
         /// \brief Size of the ghost cell layer on the leaf level
-        unsigned int ghostSize(int) const;
+        grid_size_t ghostSize(int) const;
 
         /// \brief Size of the overlap on a given level
-        unsigned int overlapSize(int, int) const;
+        grid_size_t overlapSize(int, int) const;
 
         /// \brief Size of the ghost cell layer on a given level
-        unsigned int ghostSize(int, int) const;
+        grid_size_t ghostSize(int, int) const;
 
         /// \brief returns the number of boundary segments within the macro grid
-        unsigned int numBoundarySegments() const;
+        grid_size_t numBoundarySegments() const;
 
         void setPartitioningParams(const std::map<std::string,std::string>& params);
 

@@ -89,7 +89,7 @@ public:
     ///         For CpGrid, the field property vector is assumed to be given for level 0 when isFieldPropLgr_ == false,
     ///         and for certain LGR/level > 0 when isFieldPropLgr_ == true.
     template<typename EntityType, typename FieldPropType>
-    typename std::enable_if_t<!std::is_same_v<EntityType, unsigned int>, FieldPropType>
+    typename std::enable_if_t<!std::is_same_v<EntityType, grid_size_t>, FieldPropType>
     operator()(const EntityType& elem, const std::vector<FieldPropType>& fieldProp) const;
 
     /// \brief: Get field property of type double from field properties manager by name.
@@ -120,7 +120,7 @@ public:
     /// \tparam     GridType    Auxiliary type to overload the method, distinguishing general grids from CpGrid, with std::enable_if.
     ///                         Default: GridType = Grid.
     template<typename EntityType, typename GridType = Grid>
-    typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+    typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
     getFieldPropIdx(const EntityType& elem) const;
 
     /// \brief: Return index to search for the field propertries, for CpGrids.
@@ -132,7 +132,7 @@ public:
     /// \tparam     GridType    Auxiliary type to overload the method, distinguishing general grids from CpGrid, with std::enable_if.
     ///                         Default: GridType = Grid.
     template<typename EntityType, typename GridType = Grid>
-    typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+    typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
     getFieldPropIdx(const EntityType& elem) const;
 
     /// \brief: Return the same element index for all grids different from CpGrid.
@@ -204,7 +204,7 @@ public:
     ///         For CpGrid, the field property vector is assumed to be given for level 0 when isFieldPropLgr_ == false,
     ///         and for certain LGR/level > 0 when isFieldPropLgr_ == true.
     template<typename EntityType, typename FieldPropType>
-    typename std::enable_if_t<!std::is_same_v<EntityType, unsigned int>, FieldPropType>
+    typename std::enable_if_t<!std::is_same_v<EntityType, grid_size_t>, FieldPropType>
     operator()(const EntityType& elem,const std::vector<FieldPropType>& fieldProp) const;
 
     /// \brief: Get field property of type double from field properties manager by name.
@@ -235,7 +235,7 @@ public:
     /// \tparam     GridType    Auxiliary type to overload the method, distinguishing general grids from CpGrid, with std::enable_if.
     ///                         Default: GridType = Grid.
     template<typename EntityType, typename GridType = Grid>
-    typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid>  && !std::is_same_v<EntityType, unsigned int>,int>
+    typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid>  && !std::is_same_v<EntityType, grid_size_t>,int>
     getFieldPropCartesianIdx(const EntityType& elem) const;
 
     /// \brief: Return index to search for the field propertries, for CpGrids.
@@ -246,7 +246,7 @@ public:
     /// \tparam     GridType    Auxiliary type to overload the method, distinguishing general grids from CpGrid, with std::enable_if.
     ///                         Default: GridType = Grid.
     template<typename EntityType, typename GridType = Grid>
-    typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+    typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
     getFieldPropCartesianIdx(const EntityType& elem) const;
 
     /// \brief: Return the same element index for all grids different from CpGrid.
@@ -293,7 +293,7 @@ FieldPropType Opm::LookUpData<Grid,GridView>::operator()(const int& elemIdx,
 
 template<typename Grid, typename GridView>
 template<typename EntityType, typename FieldPropType>
-typename std::enable_if_t<!std::is_same_v<EntityType, unsigned int>,FieldPropType>
+typename std::enable_if_t<!std::is_same_v<EntityType, grid_size_t>,FieldPropType>
 Opm::LookUpData<Grid,GridView>::operator()(const EntityType& elem,
                                            const std::vector<FieldPropType>& fieldProp) const
 {
@@ -307,7 +307,7 @@ std::vector<double> Opm::LookUpData<Grid,GridView>::assignFieldPropsDoubleOnLeaf
                                                                                  const std::string& propString) const
 {
     std::vector<double> fieldPropOnLeaf;
-    unsigned int numElements = gridView_.size(0);
+    grid_size_t numElements = gridView_.size(0);
     fieldPropOnLeaf.resize(numElements);
     const auto& fieldProp = fieldPropsManager.get_double(propString);
     if ( (propString == "PORV") && (gridView_.grid().maxLevel() > 0)) {
@@ -346,7 +346,7 @@ std::vector<IntType> Opm::LookUpData<Grid,GridView>::assignFieldPropsIntOnLeaf(c
                                                                                std::function<void(IntType, int)> valueCheck) const
 {
     std::vector<IntType> fieldPropOnLeaf;
-    unsigned int numElements = gridView_.size(0);
+    grid_size_t numElements = gridView_.size(0);
     fieldPropOnLeaf.resize(numElements);
     const auto& fieldProp = fieldPropsManager.get_int(propString);
     for (const auto& element : elements(gridView_)) {
@@ -380,7 +380,7 @@ int Opm::LookUpData<Grid,GridView>::fieldPropInt(const FieldPropsManager& fieldP
 
 template<typename Grid, typename GridView>
 template<typename EntityType, typename GridType>
-typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
 Opm::LookUpData<Grid,GridView>::getFieldPropIdx(const EntityType& elem) const
 {
     static_assert(std::is_same_v<Grid,GridType>);
@@ -390,7 +390,7 @@ Opm::LookUpData<Grid,GridView>::getFieldPropIdx(const EntityType& elem) const
 
 template<typename Grid, typename GridView>
 template<typename EntityType,typename GridType>
-typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
 Opm::LookUpData<Grid,GridView>::getFieldPropIdx(const EntityType& elem) const
 {
     static_assert(std::is_same_v<Grid,GridType>);
@@ -448,7 +448,7 @@ FieldPropType Opm::LookUpCartesianData<Grid,GridView>::operator()(const int& ele
 
 template<typename Grid, typename GridView>
 template<typename EntityType, typename FieldPropType>
-typename std::enable_if_t<!std::is_same_v<EntityType, unsigned int>,FieldPropType>
+typename std::enable_if_t<!std::is_same_v<EntityType, grid_size_t>,FieldPropType>
 Opm::LookUpCartesianData<Grid,GridView>::operator()(const EntityType& elem,
                                                     const std::vector<FieldPropType>& fieldProp) const
 {
@@ -463,10 +463,10 @@ std::vector<double> Opm::LookUpCartesianData<Grid,GridView>::assignFieldPropsDou
                                                                                           const std::string& propString) const
 {
     std::vector<double> fieldPropOnLeaf;
-    unsigned int numElements = gridView_.size(0);
+    grid_size_t numElements = gridView_.size(0);
     fieldPropOnLeaf.resize(numElements);
     const auto& fieldProp = fieldPropsManager.get_double(propString);
-    for (unsigned int elemIdx = 0; elemIdx < numElements; ++elemIdx) {
+    for (grid_size_t elemIdx = 0; elemIdx < numElements; ++elemIdx) {
         const auto fieldPropCartIdx = this->getFieldPropCartesianIdx<Grid>(elemIdx);
         fieldPropOnLeaf[elemIdx] = fieldProp[fieldPropCartIdx];
     }
@@ -481,10 +481,10 @@ std::vector<IntType> Opm::LookUpCartesianData<Grid,GridView>::assignFieldPropsIn
                                                                                         std::function<void(IntType, int)> valueCheck) const
 {
     std::vector<IntType> fieldPropOnLeaf;
-    unsigned int numElements = gridView_.size(0);
+    grid_size_t numElements = gridView_.size(0);
     fieldPropOnLeaf.resize(numElements);
     const auto& fieldProp = fieldPropsManager.get_int(propString);
-    for (unsigned elemIdx = 0; elemIdx < numElements; ++elemIdx) {
+    for (grid_size_t elemIdx = 0; elemIdx < numElements; ++elemIdx) {
         const auto fieldPropCartIdx = this->getFieldPropCartesianIdx<Grid>(elemIdx);
         fieldPropOnLeaf[elemIdx] = fieldProp[fieldPropCartIdx] - needsTranslation;
         valueCheck(fieldProp[fieldPropCartIdx], fieldPropCartIdx);
@@ -514,7 +514,7 @@ int Opm::LookUpCartesianData<Grid,GridView>::fieldPropInt(const FieldPropsManage
 
 template<typename Grid, typename GridView>
 template<typename EntityType, typename GridType>
-typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+typename std::enable_if_t<!std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
 Opm::LookUpCartesianData<Grid,GridView>::getFieldPropCartesianIdx(const EntityType& elem) const
 {
     static_assert(std::is_same_v<Grid,GridType>);
@@ -525,7 +525,7 @@ Opm::LookUpCartesianData<Grid,GridView>::getFieldPropCartesianIdx(const EntityTy
 
 template<typename Grid, typename GridView>
 template<typename EntityType, typename GridType>
-typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, unsigned int>,int>
+typename std::enable_if_t<std::is_same_v<GridType,Dune::CpGrid> && !std::is_same_v<EntityType, grid_size_t>,int>
 Opm::LookUpCartesianData<Grid,GridView>::getFieldPropCartesianIdx(const EntityType& elem) const
 {
     static_assert(std::is_same_v<Grid,GridType>);

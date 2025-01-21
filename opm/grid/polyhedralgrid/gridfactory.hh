@@ -61,7 +61,7 @@ namespace Dune
               (with respect to the Grid's dimension).
      */
     virtual void insertElement(const GeometryType& type,
-                               const std::vector<unsigned int>& items)
+                               const std::vector<grid_size_t>& items)
     {
       if( type.isNone() )
       {
@@ -91,7 +91,7 @@ namespace Dune
       }
     }
 
-    void insertBoundarySegment(const std::vector<unsigned int>&)
+    void insertBoundarySegment(const std::vector<grid_size_t>&)
     {
       DUNE_THROW(NotImplemented,"yet");
     }

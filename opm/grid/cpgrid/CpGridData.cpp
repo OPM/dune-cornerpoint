@@ -825,9 +825,9 @@ class C2FDataHandle
 {
 public:
     C2FDataHandle(const Table& global, const LevelGlobalIdSet& globalIds, Table& local,
-                  std::vector<int>& unsignedGlobalFaceIds)
+                  std::vector<int>& grid_size_tGlobalFaceIds)
         : OrientedEntityTableDataHandle<LevelGlobalIdSet,0,1>(global, local, &globalIds),
-          unsignedGlobalFaceIds_(unsignedGlobalFaceIds)
+          grid_size_tGlobalFaceIds_(grid_size_tGlobalFaceIds)
     {}
     template<class B>
     void scatter(B& buffer, const FromEntity& t, std::size_t)
@@ -840,12 +840,12 @@ public:
             if ( i < 0 )
             {
                 entry = ToEntity(~i, false);
-                unsignedGlobalFaceIds_.push_back(~i);
+                grid_size_tGlobalFaceIds_.push_back(~i);
             }
             else
             {
                 entry = ToEntity(i, true);
-                unsignedGlobalFaceIds_.push_back(i);
+                grid_size_tGlobalFaceIds_.push_back(i);
             }
         }
     }
@@ -856,7 +856,7 @@ public:
         OPM_THROW(std::logic_error, "This should never throw!");
     }
 private:
-    std::vector<int>& unsignedGlobalFaceIds_;
+    std::vector<int>& grid_size_tGlobalFaceIds_;
 };
 
 template<class IndexSet>
@@ -1979,7 +1979,7 @@ bool CpGridData::disjointPatches(const std::vector<std::array<int,3>>& startIJK_
     if (startIJK_vec.size() != endIJK_vec.size() ){
         OPM_THROW(std::logic_error, "Sizes of the arguments differ. Not enough information provided.");
     }
-    for (long unsigned int patch = 0; patch < startIJK_vec.size(); ++patch){
+    for (grid_size_t patch = 0; patch < startIJK_vec.size(); ++patch){
         bool valid_patch = true;
         for (int c = 0; c < 3; ++c){
             valid_patch = valid_patch && (startIJK_vec[patch][c] < endIJK_vec[patch][c]);
@@ -1989,9 +1989,9 @@ bool CpGridData::disjointPatches(const std::vector<std::array<int,3>>& startIJK_
         }
     }
     bool are_disjoint = true;
-    for (long unsigned int patch = 0; patch < startIJK_vec.size(); ++patch) {
+    for (grid_size_t patch = 0; patch < startIJK_vec.size(); ++patch) {
         bool patch_disjoint_with_otherPatches = true;
-        for (long unsigned int other_patch = patch+1; other_patch < startIJK_vec.size(); ++other_patch) {
+        for (grid_size_t other_patch = patch+1; other_patch < startIJK_vec.size(); ++other_patch) {
             bool otherPatch_on_rightOrLeft_of_patch = (startIJK_vec[other_patch][0] > endIJK_vec[patch][0]) ||
                 (endIJK_vec[other_patch][0] < startIJK_vec[patch][0]);
             if (!otherPatch_on_rightOrLeft_of_patch) {
@@ -2028,7 +2028,7 @@ bool CpGridData::patchesShareFace(const std::vector<std::array<int,3>>& startIJK
     if (startIJK_vec.size() != endIJK_vec.size() ){
         OPM_THROW(std::logic_error, "Sizes of the arguments differ. Not enough information provided.");
     }
-    for (long unsigned int patch = 0; patch < startIJK_vec.size(); ++patch){
+    for (grid_size_t patch = 0; patch < startIJK_vec.size(); ++patch){
         bool valid_patch = true;
         for (int c = 0; c < 3; ++c){
             valid_patch = valid_patch && (startIJK_vec[patch][c] < endIJK_vec[patch][c]);
@@ -2051,9 +2051,9 @@ bool CpGridData::patchesShareFace(const std::vector<std::array<int,3>>& startIJK
         return faceIsShared; // should be false here
     };
 
-    for (long unsigned int patch = 0; patch < startIJK_vec.size(); ++patch) {
+    for (grid_size_t patch = 0; patch < startIJK_vec.size(); ++patch) {
         const auto& [iFalse, iTrue, jFalse, jTrue, kFalse, kTrue] = this->getBoundaryPatchFaces(startIJK_vec[patch], endIJK_vec[patch]);
-        for (long unsigned int other_patch = patch+1; other_patch < startIJK_vec.size(); ++other_patch) {
+        for (grid_size_t other_patch = patch+1; other_patch < startIJK_vec.size(); ++other_patch) {
             const auto& [iFalseOther, iTrueOther, jFalseOther, jTrueOther, kFalseOther, kTrueOther] =
                 getBoundaryPatchFaces(startIJK_vec[other_patch], endIJK_vec[other_patch]);
             bool isShared = false;
@@ -2183,7 +2183,7 @@ std::vector<int>
 CpGridData::getPatchesCells(const std::vector<std::array<int,3>>& startIJK_vec, const std::vector<std::array<int,3>>& endIJK_vec) const
 {
     std::vector<int> all_cells;
-    for (long unsigned int patch = 0; patch < startIJK_vec.size(); ++patch){
+    for (grid_size_t patch = 0; patch < startIJK_vec.size(); ++patch){
         /// PATCH CELLS
         const auto& patch_cells = CpGridData::getPatchCells(startIJK_vec[patch], endIJK_vec[patch]);
         all_cells.insert(all_cells.end(), patch_cells.begin(), patch_cells.end());
@@ -2219,7 +2219,7 @@ void CpGridData::validStartEndIJKs(const std::vector<std::array<int,3>>& startIJ
                                    const std::vector<std::array<int,3>>& endIJK_vec) const
 {
     if (startIJK_vec.size() == endIJK_vec.size()) {
-        for (unsigned int patch = 0; patch < startIJK_vec.size(); ++patch) {
+        for (grid_size_t patch = 0; patch < startIJK_vec.size(); ++patch) {
             bool validPatch = true;
             for (int c = 0; c < 3; ++c) {
                 // valid startIJK and endIJK for each patch
@@ -2478,7 +2478,7 @@ CpGridData::refinePatch(const std::array<int,3>& cells_per_dim, const std::array
     // Coarse grid dimension (amount of cells in each direction).
     const std::array<int,3>& grid_dim = this -> logicalCartesianSize();
     // Check that the grid is a Cartesian one.
-    long unsigned int gXYZ = grid_dim[0]*grid_dim[1]*grid_dim[2];
+    grid_size_t gXYZ = grid_dim[0]*grid_dim[1]*grid_dim[2];
     if (global_cell_.size() != gXYZ){
         OPM_THROW(std::logic_error, "Grid is not Cartesian. Patch cannot be refined.");
     }

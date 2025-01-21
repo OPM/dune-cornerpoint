@@ -51,7 +51,7 @@ public:
     /// \param offset The offsets of the rows. Row i starts
     ///               at offset[i] and ends a offset[i+1]
     /// \param size   The number of entries/rows of the table
-    SparseTableView(int* data, unsigned *offset, std::size_t size_arg)
+    SparseTableView(int* data, grid_size_t *offset, std::size_t size_arg)
         : data_(data), offset_(offset), size_(size_arg)
     {}
 
@@ -84,7 +84,7 @@ private:
     /// \brief offset The offsets of the rows.
     ///
     /// Row i starts at offset[i] and ends a offset[i+1]
-    const unsigned* offset_;
+    const grid_size_t* offset_;
     /// \brief The size, i.e. the number of rows.
     std::size_t size_;
 };

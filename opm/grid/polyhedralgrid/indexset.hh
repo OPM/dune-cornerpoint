@@ -10,6 +10,7 @@
 #include <dune/grid/common/gridenums.hh>
 #include <dune/grid/common/indexidset.hh>
 
+#include <opm/grid/grid_size.h>
 #include <opm/grid/polyhedralgrid/declaration.hh>
 
 namespace Dune
@@ -53,13 +54,13 @@ namespace Dune
     }
 
     template< int cd >
-    IndexType subIndex ( const typename Traits::template Codim< cd >::Entity &entity, int i, unsigned int codim ) const
+    IndexType subIndex ( const typename Traits::template Codim< cd >::Entity &entity, int i, grid_size_t codim ) const
     {
       return subIndex( entity, i, codim );
     }
 
     template< class Entity >
-    IndexType subIndex ( const Entity &entity, int i, unsigned int codim ) const
+    IndexType subIndex ( const Entity &entity, int i, grid_size_t codim ) const
     {
       if( codim == 0 )
         return index( entity );

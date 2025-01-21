@@ -91,7 +91,7 @@ int CellQuadrature::numQuadPts() const
     }
     assert(grid_.dimensions == 3);
     int sumnodes = 0;
-    for (unsigned hf = grid_.cell_facepos[cell_]; hf < grid_.cell_facepos[cell_ + 1]; ++hf) {
+    for (grid_size_t hf = grid_.cell_facepos[cell_]; hf < grid_.cell_facepos[cell_ + 1]; ++hf) {
         const int face = grid_.cell_faces[hf];
         sumnodes += grid_.face_nodepos[face + 1] - grid_.face_nodepos[face];
     }
@@ -133,7 +133,7 @@ void CellQuadrature::quadPtCoord(const int index, double* coord) const
     int tetindex = index / 4;
     const int subindex = index % 4;
     const double* nc = grid_.node_coordinates;
-    for (unsigned hf = grid_.cell_facepos[cell_]; hf < grid_.cell_facepos[cell_ + 1]; ++hf) {
+    for (grid_size_t hf = grid_.cell_facepos[cell_]; hf < grid_.cell_facepos[cell_ + 1]; ++hf) {
         const int face = grid_.cell_faces[hf];
         const int nfn = grid_.face_nodepos[face + 1] - grid_.face_nodepos[face];
         if (nfn <= tetindex) {
@@ -178,7 +178,7 @@ double CellQuadrature::quadPtWeight(const int index) const
     assert(dim == 3);
     int tetindex = index / 4;
     const double* nc = grid_.node_coordinates;
-    for (unsigned hf = grid_.cell_facepos[cell_]; hf < grid_.cell_facepos[cell_ + 1]; ++hf) {
+    for (grid_size_t hf = grid_.cell_facepos[cell_]; hf < grid_.cell_facepos[cell_ + 1]; ++hf) {
         const int face = grid_.cell_faces[hf];
         const int nfn = grid_.face_nodepos[face + 1] - grid_.face_nodepos[face];
         if (nfn <= tetindex) {

@@ -111,7 +111,7 @@ namespace Opm
             std::set<int> cell_vertices;
             std::vector<int> cell_faces;
             std::multimap<int, int> vertex_adj_faces;
-            for (unsigned hface = grid.cell_facepos[cell]; hface < grid.cell_facepos[cell + 1]; ++hface) {
+            for (grid_size_t hface = grid.cell_facepos[cell]; hface < grid.cell_facepos[cell + 1]; ++hface) {
                 const int face = grid.cell_faces[hface];
                 cell_faces.push_back(face);
                 const int fn0 = grid.face_nodepos[face];

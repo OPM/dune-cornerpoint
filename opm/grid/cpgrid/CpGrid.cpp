@@ -1061,29 +1061,29 @@ template cpgrid::Entity<3> CpGrid::entity<3>( const cpgrid::Entity<3>&) const;
 
 
 /// \brief Size of the overlap on the leaf level
-unsigned int CpGrid::overlapSize(int) const {
+grid_size_t CpGrid::overlapSize(int) const {
     return 1;
 }
 
 
 /// \brief Size of the ghost cell layer on the leaf level
-unsigned int CpGrid::ghostSize(int) const {
+grid_size_t CpGrid::ghostSize(int) const {
     return 0;
 }
 
 
 /// \brief Size of the overlap on a given level
-unsigned int CpGrid::overlapSize(int, int) const {
+grid_size_t CpGrid::overlapSize(int, int) const {
     return 1;
 }
 
 
 /// \brief Size of the ghost cell layer on a given level
-unsigned int CpGrid::ghostSize(int, int) const {
+grid_size_t CpGrid::ghostSize(int, int) const {
     return 0;
 }
 
-unsigned int CpGrid::numBoundarySegments() const
+grid_size_t CpGrid::numBoundarySegments() const
 {
     if( uniqueBoundaryIds() )
     {
@@ -1091,7 +1091,7 @@ unsigned int CpGrid::numBoundarySegments() const
     }
     else
     {
-        unsigned int numBndSegs = 0;
+        grid_size_t numBndSegs = 0;
         const int num_faces = numFaces();
         for (int i = 0; i < num_faces; ++i) {
             cpgrid::EntityRep<1> face(i, true);
