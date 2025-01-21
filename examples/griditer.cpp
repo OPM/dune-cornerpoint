@@ -33,14 +33,14 @@ template <class GridView>
 class GridThreadedIteration
 {
 public:
-    GridThreadedIteration(const GridView& gv, const int num_threads)
+    GridThreadedIteration(const GridView& gv, const std::size_t num_threads)
         : gv_(gv), nt_(num_threads)
     {
-        [[maybe_unused]] int chunk_size;
+        [[maybe_unused]] std::size_t chunk_size;
         grid_chunk_iterators_ = Opm::createThreadIterators(gv_, nt_, 1000, chunk_size);
-        const int num_chunks = grid_chunk_iterators_.size() - 1;
+        const std::size_t num_chunks = grid_chunk_iterators_.size() - 1;
         chunks_.reserve(num_chunks);
-        for (int ii = 0; ii < num_chunks; ++ii) {
+        for (std::size_t ii = 0; ii < num_chunks; ++ii) {
             chunks_.emplace_back(grid_chunk_iterators_[ii], grid_chunk_iterators_[ii + 1]);
         }
     }
@@ -58,14 +58,22 @@ public:
         std::pair<Iterator, Iterator> pi_;
     };
 
-    const std::vector<Chunk>& chunks()
+    auto begin() const
     {
-        return chunks_;
+        return chunks_.begin();
+    }
+    auto end() const
+    {
+        return chunks_.end();
+    }
+    auto size() const
+    {
+        return chunks_.size();
     }
 
 private:
     const GridView& gv_;
-    const int nt_;
+    const std::size_t nt_;
     std::vector<Iterator> grid_chunk_iterators_;
     std::vector<Chunk> chunks_;
 };
@@ -101,13 +109,13 @@ int main(int argc, char** argv)
         std::cout << "Running chunked loop test with " << num_threads << " threads." << std::endl;
         std::vector<double> vols(grid.size(0));
         omp_set_num_threads(num_threads);
-        [[maybe_unused]] int chunk_size;
-        const auto grid_chunk_iterators = Opm::createThreadIterators(gv, num_threads, 1000, chunk_size);
-        const int num_chunks = grid_chunk_iterators.size() - 1;
         Opm::time::StopWatch clock;
         clock.start();
+        [[maybe_unused]] std::size_t chunk_size;
+        const auto grid_chunk_iterators = Opm::createThreadIterators(gv, num_threads, 1000, chunk_size);
+        const std::size_t num_chunks = grid_chunk_iterators.size() - 1;
 #pragma omp parallel for
-        for (int chunk = 0; chunk < num_chunks; ++chunk) {
+        for (std::size_t chunk = 0; chunk < num_chunks; ++chunk) {
             for (auto it = grid_chunk_iterators[chunk]; it != grid_chunk_iterators[chunk+1]; ++it) {
                 const auto& elem = *it;
                 vols[elem.index()] = elem.geometry().volume();
@@ -123,11 +131,11 @@ int main(int argc, char** argv)
         std::cout << "Running chunked loop test with " << num_threads << " threads and helper class." << std::endl;
         std::vector<double> vols(grid.size(0));
         omp_set_num_threads(num_threads);
-        GridThreadedIteration gti(gv, num_threads);
         Opm::time::StopWatch clock;
         clock.start();
+        GridThreadedIteration gti(gv, num_threads);
 #pragma omp parallel for
-        for (const auto& chunk : gti.chunks()) {
+        for (const auto& chunk : gti) {
             for (const auto& elem : chunk) {
                 vols[elem.index()] = elem.geometry().volume();
             }
