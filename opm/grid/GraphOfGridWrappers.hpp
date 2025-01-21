@@ -255,7 +255,6 @@ makeImportAndExportLists(const GraphOfGrid<Dune::CpGrid>& gog,
 ///
 /// GraphOfGrid represents a well by one vertex, so wells can not be
 /// spread over several processes.
-/// transmissiblities are currently not supported, but are queued
 std::tuple<std::vector<int>, std::vector<std::pair<std::string, bool>>,
            std::vector<std::tuple<int,int,char> >,
            std::vector<std::tuple<int,int,char,int> >,
@@ -269,6 +268,34 @@ zoltanPartitioningWithGraphOfGrid(const Dune::CpGrid& grid,
                                   int root,
                                   const double zoltanImbalanceTol,
                                   const std::map<std::string,std::string>& params);
+
+/// \brief Make complete export lists from a vector holding destination rank for each global ID
+///
+/// Intended to use on the root, as other ranks can not construct gIDtoRank.
+/// Export lists include root's cells that stay on root.
+/// \param gIDtoRank a vector indexed by global ID holding rank to which it is exported
+/// \param ccsize the number of ranks, cc.size()
+/// \return vector of vectors, vector[i] holds a vector of global IDs exported to rank i
+std::vector<std::vector<int> >
+makeExportListsFromGIDtoRank(const std::vector<int>& gIDtoRank, int ccsize);
+
+/// \brief Call serial Zoltan partitioner on GraphOfGrid
+///
+/// GraphOfGrid represents a well by one vertex, so wells can not be
+/// spread over several processes.
+std::tuple<std::vector<int>, std::vector<std::pair<std::string, bool>>,
+           std::vector<std::tuple<int,int,char> >,
+           std::vector<std::tuple<int,int,char,int> >,
+           Dune::cpgrid::WellConnections>
+zoltanSerialPartitioningWithGraphOfGrid(const Dune::CpGrid& grid,
+                                        const std::vector<Dune::cpgrid::OpmWellType> * wells,
+                                        const std::unordered_map<std::string, std::set<int>>& possibleFutureConnections,
+                                        const double* transmissibilities,
+                                        const Dune::cpgrid::CpGridDataTraits::Communication& cc,
+                                        Dune::EdgeWeightMethod edgeWeightMethod,
+                                        int root,
+                                        const double zoltanImbalanceTol,
+                                        const std::map<std::string,std::string>& params);
 #endif // HAVE_MPI
 
 } // end namespace Opm

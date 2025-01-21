@@ -299,6 +299,73 @@ BOOST_AUTO_TEST_CASE(ImportExportListExpansion)
     BOOST_CHECK_MESSAGE(importList == importSolution, "On rank " + std::to_string(cc.rank()));
     BOOST_CHECK_MESSAGE(exportList == exportSolution, "On rank " + std::to_string(cc.rank()));
 }
+
+// Sequential Zoltan partitioner has a simpler structure and relies on
+// extendGIDtoRank and makeExportListsFromGIDtoRank to make imp-/export lists.
+BOOST_AUTO_TEST_CASE(SequentialZoltanSupport)
+{
+    Dune::CpGrid grid;
+    std::array<int, 3> dims { 3, 3, 2 };
+    std::array<double, 3> size { 1., 1., 1. };
+    grid.createCartesian(dims, size);
+    const auto& cc = grid.comm();
+    if (cc.size() == 1)
+        return;
+
+    constexpr int root = 0;
+    // this test works on any number or ranks although from rank 4 (including) all are empty
+    // if ranks<4, the highest rank gobbles leftovers
+    int maxrank = cc.size() - 1;
+    std::vector<int> ranks { 0, std::min(maxrank, 1), std::min(maxrank, 2), std::min(maxrank, 3) };
+
+    std::vector<int> gIDtoRank, importedCells, importSol;
+    std::vector<std::vector<int>> exportedCells;
+    std::vector<std::vector<int>> rankSol {{ 3, 4, 5, 12, 14 },
+                                           { 0, 1, 2, 10, 11 },
+                                           { 6, 7, 8, 15 },
+                                           { 9, 13, 16, 17 }};
+    for (int i = 0; i < 4; ++i) {
+        if (cc.rank() == ranks[i])
+            importSol.insert(importSol.end(), rankSol[i].begin(), rankSol[i].end());
+    }
+    std::sort(importSol.begin(),importSol.end());
+
+    // grid is nonempty only on the rank 0
+    if (cc.rank() == root) {
+        Opm::GraphOfGrid gog(grid);
+        gog.addWell(std::set<int> { 0, 1, 2 });
+        gog.addWell(std::set<int> { 3, 4, 5 });
+        gog.addWell(std::set<int> { 6, 7, 8 });
+        gog.addWell(std::set<int> { 9, 13, 17 });
+        BOOST_REQUIRE(gog.size() == 10);
+
+        // setup vector of IDs to ranks
+        gIDtoRank.resize(grid.numCells(), root);
+        assert(gIDtoRank.size() == 18);
+        // what partitioner sees
+        gIDtoRank[0] = ranks[1];
+        gIDtoRank[3] = ranks[0];
+        gIDtoRank[6] = ranks[2];
+        gIDtoRank[9] = ranks[3];
+        gIDtoRank[10] = ranks[1];
+        gIDtoRank[11] = ranks[1];
+        gIDtoRank[12] = ranks[0];
+        gIDtoRank[14] = ranks[0];
+        gIDtoRank[15] = ranks[2];
+        gIDtoRank[16] = ranks[3];
+        // add well cells
+        extendGIDtoRank(gog, gIDtoRank, root);
+        // rearrange into the structure fitting for communication - vector per rank
+        exportedCells = Opm::makeExportListsFromGIDtoRank(gIDtoRank, cc.size());
+        // what stays on root
+        importedCells.swap(exportedCells[root]);
+    }
+
+    auto impCells = Opm::Impl::communicateExportedCells(exportedCells, cc, root);
+    if (cc.rank() != root)
+        impCells.swap(importedCells);
+    BOOST_REQUIRE(importedCells == importSol);
+}
 #endif // HAVE_MPI
 
 bool init_unit_test_func()
