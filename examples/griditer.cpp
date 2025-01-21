@@ -38,44 +38,41 @@ public:
     {
         [[maybe_unused]] std::size_t chunk_size;
         grid_chunk_iterators_ = Opm::createThreadIterators(gv_, nt_, 1000, chunk_size);
-        const std::size_t num_chunks = grid_chunk_iterators_.size() - 1;
-        chunks_.reserve(num_chunks);
-        for (std::size_t ii = 0; ii < num_chunks; ++ii) {
-            chunks_.emplace_back(grid_chunk_iterators_[ii], grid_chunk_iterators_[ii + 1]);
-        }
     }
-    using Iterator = typename GridView::template Codim<0>::Iterator;
+    using Iter = typename GridView::template Codim<0>::Iterator;
+    using IterIter = typename std::vector<Iter>::const_iterator;
 
     struct Chunk
     {
-        Chunk() {}
-        Chunk(const Iterator& i1, const Iterator& i2)
-            : pi_(i1, i2)
-        {
-        }
-        Iterator begin() const { return pi_.first; }
-        Iterator end() const { return pi_.second; }
-        std::pair<Iterator, Iterator> pi_;
+        Chunk(const Iter& i1, const Iter& i2) : pi_(i1, i2) {}
+        auto begin() const { return pi_.first; }
+        auto end() const { return pi_.second; }
+        std::pair<Iter, Iter> pi_;
     };
 
-    auto begin() const
+    struct ChunkIterator : public IterIter
     {
-        return chunks_.begin();
+        ChunkIterator(const IterIter itit) : IterIter(itit) {}
+        Chunk operator*()
+        {
+            const IterIter it = *this;
+            return Chunk{*it, *(it+1)};
+        }
+    };
+
+    auto begin()
+    {
+        return ChunkIterator(grid_chunk_iterators_.begin());
     }
-    auto end() const
+    auto end()
     {
-        return chunks_.end();
-    }
-    auto size() const
-    {
-        return chunks_.size();
+        return ChunkIterator(--grid_chunk_iterators_.end());
     }
 
 private:
     const GridView& gv_;
     const std::size_t nt_;
-    std::vector<Iterator> grid_chunk_iterators_;
-    std::vector<Chunk> chunks_;
+    std::vector<Iter> grid_chunk_iterators_;
 };
 
 
