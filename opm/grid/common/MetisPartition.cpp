@@ -156,14 +156,20 @@ metisSerialGraphPartitionGridOnRoot(const CpGrid& cpgrid,
 #endif
 
     std::shared_ptr<CombinedGridWellGraph> gridAndWells;
-    if( wells )
-    {
+    if (allowDistributedWells) {
         gridAndWells.reset(new CombinedGridWellGraph(cpgrid,
-                                                       wells,
-                                                       possibleFutureConnections,
-                                                       transmissibilities,
-                                                       false,
-                                                       edgeWeightsMethod));
+                                                     nullptr, // if we allow distributed wells, we construct the CombinedGridWellGraph without the influence of the wells, just the transmissibilities
+                                                     {},
+                                                     transmissibilities,
+                                                     false,
+                                                     edgeWeightsMethod));
+    } else {
+        gridAndWells.reset(new CombinedGridWellGraph(cpgrid,
+                                                     wells, // if we allow distributed wells, we construct the CombinedGridWellGraph with the wells, possible future connections and the transmissibilities
+                                                     possibleFutureConnections,
+                                                     transmissibilities,
+                                                     false,
+                                                     edgeWeightsMethod));
     }
 
     std::vector<int> partitionVector;
@@ -236,17 +242,8 @@ metisSerialGraphPartitionGridOnRoot(const CpGrid& cpgrid,
 
         //////// Now, we define all variables that *do depend* on whether there are wells or not
 
-        if( wells )
-        {            
-            for (int i = 0; i < n;  i++) {
-                xadj[i+1] = xadj[i] + Dune::cpgrid::getNumberOfEdgesForSpecificCellForGridWithWells(*gridAndWells, lids[i]);
-            }
-        }
-        else
-        {
-            for (int i = 0; i < n;  i++) {
-                xadj[i+1] = xadj[i] + Dune::cpgrid::getNumberOfEdgesForSpecificCell(cpgrid, lids[i]);
-            }
+        for (int i = 0; i < n;  i++) {
+            xadj[i+1] = xadj[i] + Dune::cpgrid::getNumberOfEdgesForSpecificCell(*gridAndWells, lids[i]);
         }
 
         // The number of edges depends on whether there are wells or not, twoM = 2*m, where m = number of edges.
@@ -263,21 +260,10 @@ metisSerialGraphPartitionGridOnRoot(const CpGrid& cpgrid,
         // The weights of the edges (if any) are stored in an additional array called adjwgt. This array contains 2m elements, and the weight of edge adjncy[j] is stored at location adjwgt[j]
         idx_t* adjwgt = new idx_t[twoM];
 
-        if( wells )
+        int neighborCounter = 0;
+        for( int cell = 0; cell < n;  cell++ )
         {
-            int neighborCounter = 0;
-            for( int cell = 0; cell < n;  cell++ )
-            {
-                fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounterForGridWithWells(*gridAndWells, lids[cell], gids, neighborCounter, adjncy, adjwgt);
-            }
-        }
-        else
-        {
-            int neighborCounter = 0;
-            for( int cell = 0; cell < n;  cell++ )
-            {
-                fillNBORGIDForSpecificCellAndIncrementNeighborCounter(cpgrid, lids[cell], gids, neighborCounter, adjncy);
-            }
+            fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounter(*gridAndWells, lids[cell], gids, neighborCounter, adjncy, adjwgt);
         }
 
         // Decide which partition method to use, both methods create k partitions, where
@@ -296,7 +282,7 @@ metisSerialGraphPartitionGridOnRoot(const CpGrid& cpgrid,
                                           adjncy,
                                           nullptr, // vwgt
                                           nullptr, // vsize,
-                                          wells ? adjwgt : nullptr,
+                                          adjwgt,
                                           &nparts,
                                           nullptr, // tpwgts,
                                           &ubvec,
@@ -311,7 +297,7 @@ metisSerialGraphPartitionGridOnRoot(const CpGrid& cpgrid,
                                      adjncy,
                                      nullptr, // vwgt
                                      nullptr, // vsize,
-                                     wells ? adjwgt : nullptr,
+                                     adjwgt,
                                      &nparts,
                                      nullptr, // tpwgts,
                                      &ubvec,
