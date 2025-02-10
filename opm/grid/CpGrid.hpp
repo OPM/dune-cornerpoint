@@ -224,58 +224,115 @@ namespace Dune
 #if HAVE_ECL_INPUT
         /// Read the Eclipse grid format ('grdecl').
         ///
-        /// \return Vector of global indices to the cells which have
-        ///         been removed in the grid processing due to small pore volume. Function only returns
-        ///         indices on rank 0, the vector is empty of other ranks.
-        /// \param ecl_grid the high-level object from opm-parser which represents the simulation's grid
-        ///        In a parallel run this may be a nullptr on all ranks but rank zero.
-        /// \param ecl_state the object from opm-parser provide information regarding to pore volume, NNC,
-        ///        aquifer information when ecl_state is available. NNC and aquifer connection
-        ///        information will also be updated during the function call when available and necessary.
-        /// \param periodic_extension if true, the grid will be (possibly) refined, so that
-        ///        intersections/faces along i and j boundaries will match those on the other
-        ///        side. That is, i- faces will match i+ faces etc.
-        /// \param turn_normals if true, all normals will be turned. This is intended for handling inputs with wrong orientations.
-        /// \param clip_z if true, the grid will be clipped so that the top and bottom will be planar.
-        /// \param pinchActive Force specific pinch behaviour. If true a face will connect two vertical cells, that are
-        ///           topological connected, even if there are cells with zero volume between them. If false these
-        ///           cells will not be connected despite their faces coinciding.
+        /// \return Vector of global indices to the cells which have been
+        /// removed in the grid processing due to small pore volume.
+        /// Function only returns indices on rank 0, the vector is empty of
+        /// other ranks.
+        ///
+        /// \param[in] ecl_grid the high-level object from opm-parser which
+        /// represents the simulation's grid.  In a parallel run this may be
+        /// a nullptr on all ranks but rank zero.
+        ///
+        /// \param[in,out] ecl_state the object from opm-parser provide
+        /// information regarding to pore volume, NNC, aquifer information
+        /// when ecl_state is available.  NNC and aquifer connection
+        /// nformation will also be updated during the function call when
+        /// available and necessary.
+        ///
+        /// \param[in] periodic_extension Whether or not to process the
+        /// resulting grid in order to have intersections/faces along i and
+        /// j boundaries match those on the other side. That is, i- faces
+        /// will match i+ faces etc.
+        ///
+        /// \param[in] turn_normals Whether or not to turn all normals.
+        /// This is intended for handling inputs with wrong orientations.
+        ///
+        /// \param[in] clip_z Whether or not to clip the result grid in
+        /// order to have planar top and bottom surfaces.
+        ///
+        /// \param[in] pinchActive Whether or not to force specific pinch
+        /// behaviour.  If set, a face will connect two vertical cells, that
+        /// are topological connected, even if there are cells with zero
+        /// volume between them. If false these cells will not be connected
+        /// despite their faces coinciding.
+        ///
+        /// \param[in] edge_conformal Whether or not to construct an
+        /// edge-conformal grid.  Typically useful in geo-mechanical
+        /// applications.
         std::vector<std::size_t>
         processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
                              Opm::EclipseState* ecl_state,
-                             bool periodic_extension, bool turn_normals, bool clip_z,
-                             bool pinchActive);
+                             bool periodic_extension,
+                             bool turn_normals,
+                             bool clip_z,
+                             bool pinchActive,
+                             bool edge_conformal);
 
         /// Read the Eclipse grid format ('grdecl').
         ///
-        /// Pinch behaviour is determind from the parameter ecl_grid. If ecl_grid is a nullptr or PINCH was specified for
-        /// the grid, then a face will connect two vertical cells, that are topological connected, even if there are
-        /// cells with zero volume between them, Otherwise these cells will not be connected despite their faces coinciding.
+        /// Pinch behaviour is determind from the parameter ecl_grid. If
+        /// ecl_grid is a nullptr or PINCH was specified for the grid, then
+        /// a face will connect two vertical cells, that are topological
+        /// connected, even if there are cells with zero volume between
+        /// them, Otherwise these cells will not be connected despite their
+        /// faces coinciding.
         ///
-        /// \return Vector of global indices to the cells which have
-        ///         been removed in the grid processing due to small pore volume. Function only returns
-        ///         indices on rank 0, the vector is empty of other ranks.
-        /// \param ecl_grid the high-level object from opm-parser which represents the simulation's grid
-        ///        In a parallel run this may be a nullptr on all ranks but rank zero.
-        /// \param ecl_state the object from opm-parser provide information regarding to pore volume, NNC,
-        ///        aquifer information when ecl_state is available. NNC and aquifer connection
-        ///        information will also be updated during the function call when available and necessary.
-        /// \param periodic_extension if true, the grid will be (possibly) refined, so that
-        ///        intersections/faces along i and j boundaries will match those on the other
-        ///        side. That is, i- faces will match i+ faces etc.
-        /// \param turn_normals if true, all normals will be turned. This is intended for handling inputs with wrong orientations.
-        /// \param clip_z if true, the grid will be clipped so that the top and bottom will be planar.
+        /// \return Vector of global indices to the cells which have been
+        /// removed in the grid processing due to small pore
+        /// volume. Function only returns indices on rank 0, the vector is
+        /// empty of other ranks.
+        ///
+        /// \param[in] ecl_grid the high-level object from opm-parser which
+        /// represents the simulation's grid.  In a parallel run this may be
+        /// a nullptr on all ranks but rank zero.
+        ///
+        /// \param[in,out] ecl_state the object from opm-parser provide
+        /// information regarding to pore volume, NNC, aquifer information
+        /// when ecl_state is available.  NNC and aquifer connection
+        /// nformation will also be updated during the function call when
+        /// available and necessary.
+        ///
+        /// \param[in] periodic_extension Whether or not to process the
+        /// resulting grid in order to have intersections/faces along i and
+        /// j boundaries match those on the other side. That is, i- faces
+        /// will match i+ faces etc.
+        ///
+        /// \param[in] turn_normals Whether or not to turn all normals.
+        /// This is intended for handling inputs with wrong orientations.
+        ///
+        /// \param[in] clip_z Whether or not to clip the result grid in
+        /// order to have planar top and bottom surfaces.
+        ///
+        /// \param[in] edge_conformal Whether or not to construct an
+        /// edge-conformal grid.  Typically useful in geo-mechanical
+        /// applications.
         std::vector<std::size_t>
         processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
                              Opm::EclipseState* ecl_state,
-                             bool periodic_extension, bool turn_normals = false, bool clip_z = false);
-
-#endif
+                             bool periodic_extension,
+                             bool turn_normals = false,
+                             bool clip_z = false,
+                             bool edge_conformal = false);
+#endif // HAVE_ECL_INPUT
 
         /// Read the Eclipse grid format ('grdecl').
-        /// \param input_data the data in grdecl format, declared in preprocess.h.
-        /// \param remove_ij_boundary if true, will remove (i, j) boundaries. Used internally.
-        void processEclipseFormat(const grdecl& input_data, bool remove_ij_boundary, bool turn_normals = false);
+        ///
+        /// \param[in] input_data the data in grdecl format, declared in
+        /// preprocess.h.
+        ///
+        /// \param[in] remove_ij_boundary if true, will remove (i, j)
+        /// boundaries. Used internally.
+        ///
+        /// \param[in] turn_normals if true, all normals will be turned. This is
+        /// intended for handling inputs with wrong orientations.
+        ///
+        /// \param[in] edge_conformal Whether or not to construct an
+        /// edge-conformal grid.  Typically useful in geo-mechanical
+        /// applications.
+        void processEclipseFormat(const grdecl& input_data,
+                                  bool remove_ij_boundary,
+                                  bool turn_normals = false,
+                                  bool edge_conformal = false);
 
         //@}
 

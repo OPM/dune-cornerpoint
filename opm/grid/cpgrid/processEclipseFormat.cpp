@@ -106,7 +106,7 @@ namespace Dune
                        const cpgrid::OrientedEntityTable<0, 1>& c2f,
                        const std::vector<std::array<int,8> >& c2p,
                        const std::vector<int>& face_to_output_face,
-                       const std::unordered_map<size_t, double>& aquifer_cell_volumes,
+                       const std::unordered_map<std::size_t, double>& aquifer_cell_volumes,
                        cpgrid::EntityVariable<cpgrid::Geometry<3, 3>, 0>& cell_geom,
                        cpgrid::EntityVariable<cpgrid::Geometry<2, 3>, 1>& face_geom,
                        std::shared_ptr<cpgrid::EntityVariable<cpgrid::Geometry<0, 3>, 3>> point_geom,
@@ -124,20 +124,25 @@ namespace cpgrid
     std::vector<std::size_t>
     CpGridData::processEclipseFormat(const Opm::EclipseGrid* ecl_grid_ptr,
                                      Opm::EclipseState* ecl_state,
-                                     bool periodic_extension, bool turn_normals, bool clip_z,
-                                     bool pinchActive)
+                                     const bool periodic_extension,
+                                     const bool turn_normals,
+                                     const bool clip_z,
+                                     const bool pinchActive,
+                                     const bool edge_conformal)
     {
-        if (ccobj_.rank() != 0 ) {
-            if (ecl_state) {
+        if (ccobj_.rank() != 0) {
+            if (ecl_state != nullptr) {
                 // Handle potential exception during MINPV processing
-                // Needed because later there is collective communication that will
-                // otherwise deadlock
+                //
+                // Needed because later there is collective communication
+                // that will otherwise deadlock
                 int success = 1;
                 ccobj_.broadcast(&success, 1, 0);
                 if (success == 0) {
                     throw std::runtime_error("Error during MINPV processing");
                 }
             }
+
             // Store global grid only on rank 0
             return {};
         }
@@ -385,16 +390,33 @@ namespace cpgrid
 
         if (periodic_extension) {
             // Extend grid periodically with one layer of cells in the (i, j) directions.
-            std::vector<double> new_coord;
-            std::vector<double> new_zcorn;
-            std::vector<int> new_actnum;
-            grdecl new_g;
+            std::vector<double> new_coord{};
+            std::vector<double> new_zcorn{};
+            std::vector<int> new_actnum{};
+
+            grdecl new_g{};
             addOuterCellLayer(g, new_coord, new_zcorn, new_actnum, new_g);
+
             // Make the grid.
-            processEclipseFormat(new_g, ecl_state, nnc_cells, true, turn_normals, pinchActive, tolerance_unique_points);
-        } else {
+            this->processEclipseFormat(new_g,
+                                       ecl_state,
+                                       nnc_cells,
+                                       true,
+                                       turn_normals,
+                                       pinchActive,
+                                       tolerance_unique_points,
+                                       /* edge_conformal = */ false);// maybe need at some point?
+        }
+        else {
             // Make the grid.
-            processEclipseFormat(g, ecl_state, nnc_cells, false, turn_normals, pinchActive, tolerance_unique_points);
+            this->processEclipseFormat(g,
+                                       ecl_state,
+                                       nnc_cells,
+                                       false,
+                                       turn_normals,
+                                       pinchActive,
+                                       tolerance_unique_points,
+                                       edge_conformal);
         }
 
         return minpv_result.removed_cells;
@@ -410,35 +432,57 @@ namespace cpgrid
 #if HAVE_ECL_INPUT
                                           Opm::EclipseState* ecl_state,
 #endif
-                                          NNCMaps& nnc, bool remove_ij_boundary, bool turn_normals,
-                                          bool pinchActive,
-                                          double tolerance_unique_points)
+                                          NNCMaps& nnc,
+                                          const bool remove_ij_boundary,
+                                          const bool turn_normals,
+                                          const bool pinchActive,
+                                          const double tolerance_unique_points,
+                                          const bool edge_conformal)
     {
-        if( ccobj_.rank() != 0 )
-        {
-            OPM_THROW(std::logic_error, "Processing  eclipse file only allowed on rank 0");
+        if (ccobj_.rank() != 0) {
+            OPM_THROW(std::logic_error, "Processing corner-point grid "
+                      "description only supported on rank 0");
         }
-        // Process.
+
 #ifdef VERBOSE
-        std::cout << "Processing eclipse data." << std::endl;
+        std::cout << "Processing corner-point grid description." << std::endl;
 #endif
 
-        processed_grid output;
-        int process_ok;
+        processed_grid output{};
+        int process_ok{};
 
 #if HAVE_ECL_INPUT
-        if (ecl_state && ecl_state->aquifer().hasNumericalAquifer()) {
-            const auto aquifer_cell_volumes = ecl_state->aquifer().numericalAquifers().aquiferCellVolumes();
-            const size_t global_nc = input_data.dims[0] * input_data.dims[1] * input_data.dims[2];
+        if ((ecl_state != nullptr) && ecl_state->aquifer().hasNumericalAquifer()) {
+            const std::size_t global_nc =
+                static_cast<std::size_t>(input_data.dims[0]) *
+                static_cast<std::size_t>(input_data.dims[1]) *
+                static_cast<std::size_t>(input_data.dims[2]);
+
             std::vector<int> is_aquifer_cell(global_nc, 0);
-            for ([[maybe_unused]]const auto&[global_index, volume] : aquifer_cell_volumes) {
+
+            const auto aquifer_cells = ecl_state->aquifer()
+                .numericalAquifers().allAquiferCellIds();
+
+            for (const auto& global_index : aquifer_cells) {
                 is_aquifer_cell[global_index] = 1;
             }
-            process_ok = process_grdecl(&input_data, tolerance_unique_points, is_aquifer_cell.data(), &output, pinchActive);
-        } else
+
+            process_ok = process_grdecl(static_cast<int>(pinchActive),
+                                        static_cast<int>(edge_conformal),
+                                        tolerance_unique_points,
+                                        &input_data,
+                                        is_aquifer_cell.data(),
+                                        &output);
+        }
+        else
 #endif
         {
-            process_ok = process_grdecl(&input_data, tolerance_unique_points, nullptr, &output, pinchActive);
+            process_ok = process_grdecl(static_cast<int>(pinchActive),
+                                        static_cast<int>(edge_conformal),
+                                        tolerance_unique_points,
+                                        &input_data,
+                                        /* is_aquifer_cell = */ nullptr,
+                                        &output);
         }
 
         if (process_ok == 0) {
@@ -453,23 +497,30 @@ namespace cpgrid
         }
 
 #if HAVE_ECL_INPUT
-        if (ecl_state) {
-            const auto& aquifer = ecl_state->aquifer();
-            if (aquifer.hasNumericalAquifer()) {
-                const size_t global_nc = input_data.dims[0] * input_data.dims[1] * input_data.dims[2];
-                std::vector<int> new_actnum(global_nc, 0);
-                for (int i = 0; i < output.number_of_cells; ++i) {
-                    new_actnum[output.local_cell_index[i]] = 1;
-                }
-                const auto& ecl_grid = ecl_state->getInputGrid();
-                const auto& fp = ecl_state->fieldProps();
-                aquifer.mutableNumericalAquifers().postProcessConnections(ecl_grid, new_actnum);
-                const auto& aquifer_nnc = aquifer.numericalAquifers().aquiferConnectionNNCs(ecl_grid, fp);
-                // We need to update the nnc in the ecl_state
-                ecl_state->appendInputNNC(aquifer_nnc);
-                for (const auto& single_nnc : aquifer_nnc) {
-                    nnc[ExplicitNNC].insert({single_nnc.cell1, single_nnc.cell2});
-                }
+        if ((ecl_state != nullptr) && ecl_state->aquifer().hasNumericalAquifer()) {
+            const std::size_t global_nc =
+                static_cast<std::size_t>(input_data.dims[0]) *
+                static_cast<std::size_t>(input_data.dims[1]) *
+                static_cast<std::size_t>(input_data.dims[2]);
+
+            std::vector<int> new_actnum(global_nc, 0);
+            for (int i = 0; i < output.number_of_cells; ++i) {
+                new_actnum[output.local_cell_index[i]] = 1;
+            }
+
+            const auto& ecl_grid = ecl_state->getInputGrid();
+
+            ecl_state->aquifer().mutableNumericalAquifers()
+                .postProcessConnections(ecl_grid, new_actnum);
+
+            const auto& fp = ecl_state->fieldProps();
+            const auto& aquifer_nnc = ecl_state->aquifer().numericalAquifers()
+                .aquiferConnectionNNCs(ecl_grid, fp);
+
+            // We need to update the nnc in the ecl_state
+            ecl_state->appendInputNNC(aquifer_nnc);
+            for (const auto& single_nnc : aquifer_nnc) {
+                nnc[ExplicitNNC].insert({single_nnc.cell1, single_nnc.cell2});
             }
         }
 #endif
@@ -478,19 +529,26 @@ namespace cpgrid
 #ifdef VERBOSE
         std::cout << "Building topology." << std::endl;
 #endif
-        std::vector<int> face_to_output_face;
-        buildTopo(output, nnc, global_cell_, cell_to_face_, face_to_cell_, face_to_point_, cell_to_point_, face_to_output_face);
+        std::vector<int> face_to_output_face{};
+        buildTopo(output, nnc, global_cell_,
+                  cell_to_face_, face_to_cell_,
+                  face_to_point_, cell_to_point_,
+                  face_to_output_face);
+
         std::copy(output.dimensions, output.dimensions + 3, logical_cartesian_size_.begin());
 
 #ifdef VERBOSE
         std::cout << "Building geometry." << std::endl;
 #endif
         // here we need the cell volumes based on the active index order
-        std::unordered_map<size_t, double> aquifer_cell_volumes_local;
+        std::unordered_map<std::size_t, double> aquifer_cell_volumes_local{};
 #if HAVE_ECL_INPUT
-        if (ecl_state && ecl_state->aquifer().hasNumericalAquifer()) {
-            const auto& aquifer_cell_volumes = ecl_state->aquifer().numericalAquifers().aquiferCellVolumes();
+        if ((ecl_state != nullptr) && ecl_state->aquifer().hasNumericalAquifer()) {
+            const auto& aquifer_cell_volumes = ecl_state->aquifer()
+                .numericalAquifers().aquiferCellVolumes();
+
             aquifer_cells_.reserve(aquifer_cell_volumes.size());
+
             for (auto nc = this->global_cell_.size(), i = 0 * nc; i < nc; ++i) {
                 auto aquCellPos = aquifer_cell_volumes.find(this->global_cell_[i]);
                 if (aquCellPos != aquifer_cell_volumes.end()) {
@@ -498,38 +556,46 @@ namespace cpgrid
                     aquifer_cells_.push_back(i);
                 }
             }
+
+            std::sort(aquifer_cells_.begin(), aquifer_cells_.end());
         }
 #endif
-        std::sort(aquifer_cells_.begin(), aquifer_cells_.end());
-        buildGeom(output, cell_to_face_, cell_to_point_, face_to_output_face, aquifer_cell_volumes_local, *(geometry_.geomVector(std::integral_constant<int,0>())),
-                  *( geometry_.geomVector(std::integral_constant<int,1>())), geometry_.geomVector(std::integral_constant<int,3>()),
-                  face_normals_, turn_normals);
+
+        buildGeom(output, cell_to_face_, cell_to_point_,
+                  face_to_output_face,
+                  aquifer_cell_volumes_local,
+                  *geometry_.geomVector(std::integral_constant<int,0>()),
+                  *geometry_.geomVector(std::integral_constant<int,1>()),
+                  geometry_.geomVector(std::integral_constant<int,3>()),
+                  face_normals_,
+                  turn_normals);
 
 #ifdef VERBOSE
         std::cout << "Assigning face tags." << std::endl;
 #endif
-        int nf = face_to_output_face.size();
+        const int nf = face_to_output_face.size();
         std::vector<enum face_tag> temp_tags(nf);
         for (int i = 0; i < nf; ++i) {
             const int output_face = face_to_output_face[i];
-            if (output_face == -1) {
-                temp_tags[i] = NNC_FACE;
-            } else {
-                temp_tags[i] = output.face_tag[output_face];
-            }
+            temp_tags[i] = (output_face == -1)
+                ? NNC_FACE
+                : output.face_tag[output_face];
         }
+
         face_tag_.assign(temp_tags.begin(), temp_tags.end());
 
 #ifdef VERBOSE
         std::cout << "Cleaning up." << std::endl;
 #endif
+
         // Clean up the output struct.
         free_processed_grid(&output);
 
         computeUniqueBoundaryIds();
 
-        if(ccobj_.size()>1)
+        if (ccobj_.size() > 1) {
             populateGlobalCellIndexSet();
+        }
 
         index_set_ = std::make_unique<IndexSet>(cell_to_face_.size(), geomVector<3>().size());
 
@@ -1243,7 +1309,7 @@ namespace cpgrid
                        const cpgrid::OrientedEntityTable<0, 1>& c2f,
                        const std::vector<std::array<int,8> >& c2p,
                        const std::vector<int>& face_to_output_face,
-                       const std::unordered_map<size_t, double>& aquifer_cell_volumes,
+                       const std::unordered_map<std::size_t, double>& aquifer_cell_volumes,
                        cpgrid::EntityVariable<cpgrid::Geometry<3, 3>, 0>& cell_geom,
                        cpgrid::EntityVariable<cpgrid::Geometry<2, 3>, 1>& face_geom,
                        std::shared_ptr<cpgrid::EntityVariable<cpgrid::Geometry<0, 3>, 3>> point_geom_ptr,
@@ -1418,4 +1484,3 @@ namespace cpgrid
         }
     } // anon namespace
 } // namespace Dune
-

@@ -47,7 +47,8 @@ class EclipseGrid;
 
 #if HAVE_ECL_INPUT
         /// Construct a grid from an EclipseState::EclipseGrid instance.
-        explicit GridManager(const EclipseGrid& inputGrid);
+        explicit GridManager(const EclipseGrid& inputGrid,
+                             bool edge_conformal = false);
 
         /// Construct a grid from an EclipseState::EclipseGrid instance,
         /// giving an explicit set of pore volumes to be used for MINPV
@@ -55,7 +56,8 @@ class EclipseGrid;
         /// \input[in] eclipseGrid    encapsulates a corner-point grid given from a deck
         /// \input[in] poreVolumes    one element per logical cartesian grid element
         GridManager(const EclipseGrid& inputGrid,
-                    const std::vector<double>& poreVolumes);
+                    const std::vector<double>& poreVolumes,
+                    bool edge_conformal);
 #endif
 
         /// Construct a 2d cartesian grid with cells of unit size.
@@ -92,7 +94,8 @@ class EclipseGrid;
 #if HAVE_ECL_INPUT
         // Construct corner-point grid from EclipseGrid.
         void initFromEclipseGrid(const EclipseGrid& inputGrid,
-                                 const std::vector<double>& poreVolumes);
+                                 const std::vector<double>& poreVolumes,
+                                 bool edge_conformal);
 #endif
 
         // The managed UnstructuredGrid.

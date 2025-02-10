@@ -33,9 +33,11 @@
 */
 
 #include "config.h"
+
 #include <assert.h>
 #include <limits.h>
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -62,12 +64,14 @@
 /* Determine face topology first, then compute intersection. */
 /* All intersections that occur are present in the final face geometry.*/
 static int *
-computeFaceTopology(const int *a1, const int *a2,
+computeFaceTopology(bool edge_conformal,
+                    const int *a1, const int *a2,
                     const int *b1, const int *b2,
-                    const int intersect[4], int *faces)
+                    const int intersect[4],
+                    int *faces)
 {
     int mask[8];
-    int k;
+    int k, zn;
     int *f;
 
     for (k = 0; k < 8; k++) { mask[k] = -1; }
@@ -80,31 +84,27 @@ computeFaceTopology(const int *a1, const int *a2,
 
 #if DEBUG
     /* Illegal situations */
-    if (mask [0] == mask[2] ||
-        mask [0] == mask[4] ||
-        mask [2] == mask[6] ||
-        mask [4] == mask[6]){
+    if (mask[0] == mask[2] ||
+        mask[0] == mask[4] ||
+        mask[2] == mask[6] ||
+        mask[4] == mask[6])
+    {
         fprintf(stderr, "Illegal Partial pinch!\n");
     }
 #endif
 
-
     /* Partial pinch of face */
-    if (mask[0] == mask[6]){
+    if (mask[0] == mask[6]) {
         mask[6] = -1;
     }
 
-
-    if (mask[2] == mask[4]){
+    if (mask[2] == mask[4]) {
         mask[4] = -1;
     }
-
-
 
     /* Get shape of face: */
     /*   each new intersection will be part of the new face, */
     /*   but not all pillar points. This is encoded in mask. */
-
 
     mask[1] = intersect[3]; /* top-top */
     mask[3] = -1;
@@ -112,13 +112,14 @@ computeFaceTopology(const int *a1, const int *a2,
     mask[7] = -1;
 
     /* bottom-top */
-    if (intersect[1] != -1){
-        if(a1[0] > b1[1]){ /* intersection[1] left of (any) intersection[0] */
+    if (intersect[1] != -1) {
+        if (a1[0] > b1[1]) {
+            /* intersection[1] left of (any) intersection[0] */
             mask[0] = -1;
             mask[6] = -1;
             mask[7] = intersect[1];
         }
-        else{
+        else {
             mask[2] = -1;
             mask[4] = -1;
             mask[3] = intersect[1];
@@ -126,8 +127,9 @@ computeFaceTopology(const int *a1, const int *a2,
     }
 
     /* top-bottom */
-    if (intersect[2] != -1){
-        if(a1[1] < b1[0]){ /* intersection[2] left of (any) intersection[3] */
+    if (intersect[2] != -1) {
+        if (a1[1] < b1[0]) {
+            /* intersection[2] left of (any) intersection[3] */
             mask[0] = -1;
             mask[6] = -1;
             mask[7] = intersect[2];
@@ -138,33 +140,71 @@ computeFaceTopology(const int *a1, const int *a2,
             mask[3] = intersect[2];
         }
     }
-    f = faces;
-    for (k=7; k>=0; --k){
-        if(mask[k] != -1){
-            *f++ = mask[k];
-        }
-    }
 
-#if DEBUG>1
-    /* Check for repeated nodes:*/
-    int i;
-    fprintf(stderr, "face: ");
-    for (i=0; i<8; ++i){
-        fprintf(stderr, "%d ", mask[i]);
-        for (k=0; k<8; ++k){
-            if (i!=k && mask[i] != -1 && mask[i] == mask[k]){
-                fprintf(stderr, "Repeated node in faulted face\n");
+    f = faces;
+
+    if (! edge_conformal) {
+        for (k = 7; k >= 0; --k) {
+            if (mask[k] != -1) {
+                *f++ = mask[k];
             }
         }
     }
-    fprintf(stderr, "\n");
+    else {
+        for (k = 7; k >= 4; --k) {
+            if (mask[k] != -1) {
+                *f++ = mask[k];
+            }
+        }
+
+        /* add possible hanging nodes */
+        if ((mask[2] != -1) && (mask[4] != -1)) {
+            assert(mask[3] == -1);
+            if (mask[2] - mask[4] > 1) {
+                for (zn = mask[4] + 1; zn < mask[2]; ++zn) {
+                    *f++ = zn;
+                }
+            }
+        }
+
+        for (k = 3; k >= 0; --k) {
+            if (mask[k] != -1) {
+                *f++ = mask[k];
+            }
+        }
+
+        if ((mask[6] != -1) && (mask[0] != -1)) {
+            assert(mask[7] == -1);
+
+            if (mask[0] - mask[6] > 1) {
+                for (zn = mask[0] - 1; zn > mask[6]; --zn) {
+                    *f++ = zn;
+                }
+            }
+        }
+    }
+
+
+#if DEBUG > 1
+    {
+        /* Check for repeated nodes:*/
+        int i;
+
+        fprintf(stderr, "face: ");
+        for (i=0; i<8; ++i){
+            fprintf(stderr, "%d ", mask[i]);
+            for (k=0; k<8; ++k){
+                if (i!=k && mask[i] != -1 && mask[i] == mask[k]){
+                    fprintf(stderr, "Repeated node in faulted face\n");
+                }
+            }
+        }
+
+        fprintf(stderr, "\n");
+    }
 #endif
 
-
     return f;
-
-
-
 }
 
 
@@ -203,7 +243,9 @@ faceintersection(const int *a1, const int *a2,
 
 
 /* work should be pointer to 2n ints initialised to zero . */
-void findconnections(int n, int *pts[4],
+void findconnections(bool edge_conformal,
+                     int n,
+                     int *pts[4],
                      int *intersectionlist,
                      int *work,
                      struct processed_grid *out)
@@ -332,11 +374,13 @@ void findconnections(int n, int *pts[4],
                             *c++ = cell_a;
                             *c++ = cell_b;
 
-                            f = computeFaceTopology(a1+i, a2+i, b1+j, b2+j, intersect, f);
+                            f = computeFaceTopology(edge_conformal,
+                                                    a1+i, a2+i, b1+j, b2+j,
+                                                    intersect, f);
 
                             out->face_ptr[++out->number_of_faces] = f - out->face_nodes;
                         }
-                        else{
+                        else {
                             ;
                         }
                     }

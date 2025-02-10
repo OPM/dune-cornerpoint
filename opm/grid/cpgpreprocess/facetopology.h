@@ -35,8 +35,13 @@
 #ifndef OPM_FACETOPOLOGY_HEADER
 #define OPM_FACETOPOLOGY_HEADER
 
+#include <stdbool.h>
 
-void findconnections(int n, int *pts[4],
+struct processed_grid;
+
+void findconnections(bool edge_conformal,
+                     int n,
+                     int *pts[4],
                      int *intersectionlist,
                      int *work,
                      struct processed_grid *out);

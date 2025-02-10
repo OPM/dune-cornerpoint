@@ -209,7 +209,7 @@ public:
         /// communicating. Uses the define MAX_DATA_COMMUNICATED_PER_ENTITY.
         MAX_DATA_PER_CELL = MAX_DATA_COMMUNICATED_PER_ENTITY
 #endif
-    };     
+    };
 
     /// Constructor for parallel grid data.
     /// \param comm The MPI communicator
@@ -217,15 +217,15 @@ public:
     explicit CpGridData(MPIHelper::MPICommunicator comm,  std::vector<std::shared_ptr<CpGridData>>& data);
 
 
-    
+
     /// Constructor
-    explicit CpGridData(std::vector<std::shared_ptr<CpGridData>>& data);  
+    explicit CpGridData(std::vector<std::shared_ptr<CpGridData>>& data);
     /// Destructor
     ~CpGridData();
-  
-   
-    
-    
+
+
+
+
     /// number of leaf entities per codim in this process
     int size(int codim) const;
 
@@ -240,61 +240,139 @@ public:
     }
 
     /// Read the Eclipse grid format ('grdecl').
-    /// \param filename the name of the file to read.
-    /// \param periodic_extension if true, the grid will be (possibly) refined, so that
-    ///        intersections/faces along i and j boundaries will match those on the other
-    ///        side. That is, i- faces will match i+ faces etc.
-    void readEclipseFormat(const std::string& filename, bool periodic_extension, bool turn_normals = false);
+    ///
+    /// \param[in] filename the name of the file to read.
+    ///
+    /// \param[in] periodic_extension Whether or not to process the
+    /// resulting grid in order to have intersections/faces along i and j
+    /// boundaries match those on the other side. That is, i- faces will
+    /// match i+ faces etc.
+    ///
+    /// \param[in] turn_normals Whether or not to turn all normals.  This is
+    /// intended for handling inputs with wrong orientations.
+    ///
+    /// \param[in] edge_conformal Whether or not to construct an
+    /// edge-conformal grid.  Typically useful in geo-mechanical
+    /// applications.
+    void readEclipseFormat(const std::string& filename,
+                           bool periodic_extension,
+                           bool turn_normals = false,
+                           bool edge_conformal = false);
 
 #if HAVE_ECL_INPUT
     /// Read the Eclipse grid format ('grdecl').
-    /// \param deck the parsed deck from opm-parser (which is a low-level object)
-    /// \param periodic_extension if true, the grid will be (possibly) refined, so that
-    ///        intersections/faces along i and j boundaries will match those on the other
-    ///        side. That is, i- faces will match i+ faces etc.
-    /// \param turn_normals if true, all normals will be turned. This is intended for handling inputs with wrong orientations.
-    /// \param clip_z if true, the grid will be clipped so that the top and bottom will be planar.
-    /// \param poreVolume pore volumes for use in MINPV processing, if asked for in deck
-    void processEclipseFormat(const Opm::Deck& deck, bool periodic_extension, bool turn_normals = false, bool clip_z = false,
-                              const std::vector<double>& poreVolume = std::vector<double>());
+    ///
+    /// \param[in] deck the parsed deck from opm-parser (which is a
+    /// low-level object)
+    ///
+    /// \param[in] periodic_extension Whether or not to process the
+    /// resulting grid in order to have intersections/faces along i and j
+    /// boundaries match those on the other side. That is, i- faces will
+    /// match i+ faces etc.
+    ///
+    /// \param[in] turn_normals Whether or not to turn all normals.  This is
+    /// intended for handling inputs with wrong orientations.
+    ///
+    /// \param[in] clip_z Whether or not to clip the result grid in
+    /// order to have planar top and bottom surfaces.
+    ///
+    /// \param[in] poreVolume pore volumes for use in MINPV processing, if
+    /// asked for in deck
+    ///
+    /// \param[in] edge_conformal Whether or not to construct an
+    /// edge-conformal grid.  Typically useful in geo-mechanical
+    /// applications.
+    void processEclipseFormat(const Opm::Deck& deck,
+                              bool periodic_extension,
+                              bool turn_normals = false,
+                              bool clip_z = false,
+                              const std::vector<double>& poreVolume = std::vector<double>{},
+                              bool edge_conformal = false);
 
     /// Read the Eclipse grid format ('grdecl').
-    /// \param ecl_grid the high-level object from opm-parser which represents the simulation's grid
-    ///        In a parallel run this may be a nullptr on all ranks but rank zero.
-    /// \param ecl_state the object from opm-parser provide information regarding to pore volume, NNC,
-    ///        aquifer information when ecl_state is available. NNC and aquifer connection
-    ///        information will also be updated during the function call when available and necessary.
-    /// \param periodic_extension if true, the grid will be (possibly) refined, so that
-    ///        intersections/faces along i and j boundaries will match those on the other
-    ///        side. That is, i- faces will match i+ faces etc.
-    /// \param turn_normals if true, all normals will be turned. This is intended for handling inputs with wrong orientations.
-    /// \param clip_z if true, the grid will be clipped so that the top and bottom will be planar.
-    /// \param pichActive Whether PINCH keyword was specified
-    /// \return A vector of removed cells and created NNCs with transmissibilities die to PINCH item 4 all.
+    ///
+    /// \param[in] ecl_grid the high-level object from opm-parser which
+    /// represents the simulation's grid.  In a parallel run this may be
+    /// a nullptr on all ranks but rank zero.
+    ///
+    /// \param[in,out] ecl_state the object from opm-parser provide
+    /// information regarding to pore volume, NNC, aquifer information
+    /// when ecl_state is available.  NNC and aquifer connection
+    /// nformation will also be updated during the function call when
+    /// available and necessary.
+    ///
+    /// \param[in] periodic_extension Whether or not to process the
+    /// resulting grid in order to have intersections/faces along i and
+    /// j boundaries match those on the other side. That is, i- faces
+    /// will match i+ faces etc.
+    ///
+    /// \param[in] turn_normals Whether or not to turn all normals.
+    /// This is intended for handling inputs with wrong orientations.
+    ///
+    /// \param[in] clip_z Whether or not to clip the result grid in
+    /// order to have planar top and bottom surfaces.
+    ///
+    /// \param[in] pinchActive Whether or not to force specific pinch
+    /// behaviour.  If set, a face will connect two vertical cells, that
+    /// are topological connected, even if there are cells with zero
+    /// volume between them. If false these cells will not be connected
+    /// despite their faces coinciding.
+    ///
+    /// \param[in] edge_conformal Whether or not to construct an
+    /// edge-conformal grid.  Typically useful in geo-mechanical
+    /// applications.
+    ///
+    /// \return Cells removed due low pore-volume and across which to create
+    /// non-neighbouring connections if item 4 of the 'PINCH' keyword is set
+    /// to 'ALL'.
     std::vector<std::size_t>
-    processEclipseFormat(const Opm::EclipseGrid* ecl_grid, Opm::EclipseState* ecl_state,
-                         bool periodic_extension, bool turn_normals = false, bool clip_z = false,
-                         bool pinchActive = true);
+    processEclipseFormat(const Opm::EclipseGrid* ecl_grid,
+                         Opm::EclipseState* ecl_state,
+                         bool periodic_extension,
+                         bool turn_normals = false,
+                         bool clip_z = false,
+                         bool pinchActive = true,
+                         bool edge_conformal = false);
 #endif
 
     /// Read the Eclipse grid format ('grdecl').
-    /// \param input_data the data in grdecl format, declared in preprocess.h.
     ///
-    /// \param ecl_state the object from opm-parser provide information regarding to pore volume, NNC,
-    ///        aquifer information when ecl_state is available. NNC and aquifer connection
-    ///        information will also be updated during the function call when available and necessary.
-    /// \param nnc is the non-neighboring connections
-    /// \param remove_ij_boundary if true, will remove (i, j) boundaries. Used internally.
-    /// \param pinchActive If true, we will add faces between vertical cells that have only inactive cells or cells
-    ///            with zero volume between them. If false these cells will not be connected.
-    /// \param tolerance_unique_points Tolerance used to identify points based on their cooridinate
+    /// \param input_data the data in grdecl format, declared in
+    /// preprocess.h.
+    ///
+    /// \param[in,out] ecl_state the object from opm-parser provide
+    /// information regarding to pore volume, NNC, aquifer information
+    /// when ecl_state is available.  NNC and aquifer connection
+    /// nformation will also be updated during the function call when
+    /// available and necessary.
+    ///
+    /// \param[in,out] nnc Non-neighboring connections.
+    ///
+    /// \param[in] turn_normals Whether or not to turn all normals.
+    /// This is intended for handling inputs with wrong orientations.
+    ///
+    /// \param[in] pinchActive Whether or not to force specific pinch
+    /// behaviour.  If set, a face will connect two vertical cells, that are
+    /// topological connected, even if there are cells with zero volume
+    /// between them. If false these cells will not be connected despite
+    /// their faces coinciding.
+    ///
+    /// \param[in] tolerance_unique_points Tolerance used to identify points
+    /// based on their cooridinate.
+    ///
+    /// \param[in] edge_conformal Whether or not to construct an
+    /// edge-conformal grid.  Typically useful in geo-mechanical
+    /// applications.
     void processEclipseFormat(const grdecl& input_data,
 #if HAVE_ECL_INPUT
                               Opm::EclipseState* ecl_state,
 #endif
                               std::array<std::set<std::pair<int, int>>, 2>& nnc,
-                              bool remove_ij_boundary, bool turn_normals, bool pinchActive,
-                              double tolerance_unique_points);
+                              bool remove_ij_boundary,
+                              bool turn_normals,
+                              bool pinchActive,
+                              double tolerance_unique_points,
+                              bool edge_conformal);
 
     /// @brief
     ///    Extract Cartesian index triplet (i,j,k) of an active cell.
@@ -386,7 +464,7 @@ public:
 
     int sharedFaceTag(const std::vector<std::array<int,3>>& startIJK_2Patches, const std::vector<std::array<int,3>>& endIJK_2Patches) const;
 
-    
+
     /// @brief Mark entity for refinement or coarsening.
     ///
     /// Refinement on CpGrid is partially supported for Cartesian grids, with the keyword CARFIN.
@@ -890,10 +968,10 @@ private:
     /** Copy of (CpGrid object).data_ associated with the CpGridData object. */
     std::vector<std::shared_ptr<CpGridData>>* level_data_ptr_;
     // SUITABLE FOR ALL LEVELS EXCEPT FOR LEAFVIEW
-    /** Map between level and leafview cell indices. Only cells (from that level) that appear in leafview count. -1 when the cell vanished.*/  
+    /** Map between level and leafview cell indices. Only cells (from that level) that appear in leafview count. -1 when the cell vanished.*/
     std::vector<int> level_to_leaf_cells_; // In entry 'level cell index', we store 'leafview cell index'
     /** Parent cells and their children. Entry is {-1, {}} when cell has no children.*/ // {level LGR, {child0, child1, ...}}
-    std::vector<std::tuple<int,std::vector<int>>> parent_to_children_cells_; 
+    std::vector<std::tuple<int,std::vector<int>>> parent_to_children_cells_;
     /** Amount of children cells per parent cell in each direction. */ // {# children in x-direction, ... y-, ... z-}
     std::array<int,3> cells_per_dim_;
     // SUITABLE ONLY FOR LEAFVIEW
@@ -907,7 +985,7 @@ private:
     /** Level-grid or Leaf-grid cell to parent cell and refined-cell-in-parent-cell index (number between zero and total amount
         of children per parent (cells_per_dim[0]_*cells_per_dim_[1]*cells_per_dim_[2])). Entry is -1 when cell has no father. */
     std::vector<int> cell_to_idxInParentCell_;
-    
+
 
 
     /// \brief Object for collective communication operations.

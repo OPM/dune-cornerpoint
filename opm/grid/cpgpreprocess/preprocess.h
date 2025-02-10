@@ -70,7 +70,6 @@ extern "C" {
         NNC_FACE       /**< Arbitrary non-neighbouring connection. */
     };
 
-
     /**
      * Result structure representing minimal derived topology and geometry of
      * a geological model in corner-point format.
@@ -83,29 +82,37 @@ extern "C" {
 
         int    dimensions[3];     /**< Cartesian box dimensions. */
 
-        unsigned number_of_faces;   /**< Total number of unique grid faces
-                                       (i.e., connections). */
-        int    *face_nodes;       /**< Node (vertex) numbers of each face,
-                                       stored sequentially. */
-        unsigned int    *face_ptr;         /**< Start position for each face's
-                                       `face_nodes'. */
-        int    *face_neighbors;   /**< Global cell numbers.  Two elements per
-                                       face, stored sequentially. */
+        unsigned number_of_faces; /**< Total number of unique grid faces
+                                   * (i.e., connections). */
+        int    *face_nodes;     /**< Node (vertex) numbers of each face,
+                                 * stored sequentially. */
+        unsigned int *face_ptr; /**< Start position for each face's
+                                 * `face_nodes'. */
+        int    *face_neighbors;   /**< Global cell numbers.  Two elements
+                                   * per face, stored sequentially. */
         enum face_tag *face_tag;  /**< Classification of grid's individual
-                                       connections (faces). */
+                                   * connections (faces). */
+
+        /* Cell-to-face mapping, the transpose of the face-to-cell mapping,
+         * needed for edge conformal processing */
+        int    *cell_facePos;   /**< Start position for each cell's
+                                 * `cell_faces'. */
+
+        int    *cell_faces;     /**< Face numbers of each cell, stored
+                                 * sequentially. Indexed by cell_facePos. */
 
         int    number_of_nodes;   /**< Number of unique grid vertices. */
         int    number_of_nodes_on_pillars; /**< Total number of unique cell
-                                                vertices that lie on pillars. */
+                                            * vertices that lie on
+                                            * pillars. */
         double *node_coordinates; /**< Vertex coordinates.  Three doubles
-                                       (\f$x\f$, \f$y\f$, \f$z\f$) per vertex,
-                                       stored sequentially. */
+                                   * (\f$x\f$, \f$y\f$, \f$z\f$) per vertex,
+                                   * stored sequentially. */
 
         int    number_of_cells;   /**< Number of active grid cells. */
         int    *local_cell_index; /**< Deceptively named local-to-global cell
                                        index mapping. */
     };
-
 
     /**
      * Construct a prototypical grid representation from a corner-point
@@ -117,25 +124,38 @@ extern "C" {
      * words, the result structure must point to a region of memory that is
      * typically backed by automatic or allocated (dynamic) storage duration.
      *
-     * @param[in]     g   Corner-point specification. If "actnum" is NULL, then
+     * @param[in] pinchActive Whether cells with zero volume should be
+     *                    pinched out and neighboring cells should be
+     *                    connected.
+     *
+     * @param[in] edge_conformal Whether or not to create an edge-conformal
+     *                    grid.  This is an experimental feature, aimed at
+     *                    supporting geo-mechanical workflows, that should
+     *                    typically not be used in production runs of
+     *                    traditional reservoir simulations.  Non-zero to
+     *                    enable edge-conformal processing, zero to disable
+     *                    this mode.
+     *
+     * @param[in]     tol Absolute tolerance of node-coincidence.
+     *
+     * @param[in]     g   Corner-point specification.  If "actnum" is NULL, then
      *                    the specification is interpreted as if all cells are
      *                    initially active.
-     * @param[in]     tol Absolute tolerance of node-coincidence.
+     *
      * @param[in,out] out Minimal grid representation featuring face-to-cell
      *                    neighbourship definition, vertex geometry, face's
      *                    constituent vertices, and local-to-global cell
      *                    mapping.
-     * @param[in] pinchActive Whether cells with zero volume should be pinched out
-     *                    and neighboring cells should be connected.
      *
      * @return One (1, true) if grid successfully generated, zero (0, false)
      * otherwise.
      */
-    int process_grdecl(const struct grdecl   *g,
+    int process_grdecl(int                    pinchActive,
+                       int                    edge_conformal,
                        double                 tol,
+                       const struct grdecl   *g,
                        const int             *is_aquifer_cell,
-                       struct processed_grid *out,
-                       int                    pinchActive);
+                       struct processed_grid *out);
 
     /**
      * Release memory resources acquired in previous grid processing using
@@ -148,6 +168,15 @@ extern "C" {
      *                  call to function process_grdecl().
      */
     void free_processed_grid(struct processed_grid *g);
+
+    /**
+     * Populate cell-to-face mapping.
+     *
+     * @param[in,out] grid On input, the neighbourship structure from
+     * process_grdecl(), with the 'edge_conformal' flag set to true.  On
+     * output, the same structure, but with added cell-to-face mappings.
+     */
+    void add_cells(struct processed_grid *grid);
 
 #ifdef __cplusplus
 }
