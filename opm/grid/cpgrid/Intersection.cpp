@@ -46,42 +46,26 @@ Intersection::Intersection(const CpGridData& grid, const EntityRep<0>& cell, int
             }
 int Intersection::boundaryId() const
             {
-                int ret = 0;
                 if (boundary()) {
                     if (pgrid_->uniqueBoundaryIds()) {
                         // Use the unique boundary ids.
                         OrientedEntityTable<0,1>::ToType face = faces_of_cell_[subindex_];
-                        ret = pgrid_->unique_boundary_ids_[face];
+                        return pgrid_->unique_boundary_ids_[face];
                     } else {
                         // Use the face tag based ids, i.e. 1-6 for i-, i+, j-, j+, k-, k+.
-                        typedef OrientedEntityTable<0,1>::ToType Face;
-                        const Face& f = faces_of_cell_[subindex_];
-                        const bool normal_is_in = !f.orientation();
-                        enum face_tag tag = pgrid_->face_tag_[f];
-
-                        switch (tag) {
-                        case I_FACE:
-                            //                   LEFT : RIGHT
-                            ret = normal_is_in ? 1    : 2; // min(I) : max(I)
-                            break;
-                        case J_FACE:
-                            //                   BACK : FRONT
-                            ret = normal_is_in ? 3    : 4; // min(J) : max(J)
-                            break;
-                        case K_FACE:
-                            // Note: TOP at min(K) as 'z' measures *depth*.
-                            //                   TOP  : BOTTOM
-                            ret = normal_is_in ? 5    : 6; // min(K) : max(K)
-                            break;
-                        case NNC_FACE:
+                        if (pgrid_->face_tag_[faces_of_cell_[subindex_]] == NNC_FACE)
+                        {
                             // This should not be possible, as NNC "faces" always
                             // have two cell neighbours and thus are not on the boundary.
                             OPM_THROW(std::logic_error, "NNC face at boundary. This should never happen!");
                         }
+
+                        return indexInInside() + 1;
                     }
                 }
-                return ret;
+                return 0;
             }
+
 int Intersection::boundarySegmentIndex() const
             {
                 // Since this is almost the same that we did for
@@ -127,28 +111,18 @@ void Intersection::increment()
 
 int Intersection::indexInInside() const
 {
-    // Use the face tags to decide if an intersection is
+    // Use the face tags (I_FACE = 0, J_FACE = 1, K_FACE = 2)
+    // to decide if an intersection is
     // on an x, y, or z face and use orientations to decide
     // if its (for example) an xmin or xmax face.
-    typedef OrientedEntityTable<0,1>::ToType Face;
-    const Face& f = faces_of_cell_[subindex_];
-    const bool normal_is_in = !f.orientation();
-    enum face_tag tag = pgrid_->face_tag_[f];
-    switch (tag) {
-    case I_FACE:
-        return normal_is_in ? 0 : 1; // min(I) : max(I)
-    case J_FACE:
-        return normal_is_in ? 2 : 3; // min(J) : max(J)
-    case K_FACE:
-        return normal_is_in ? 4 : 5; // min(K) : max(K)
-    case NNC_FACE:
-        // For nnc faces we return the otherwise unused value -1.
-        // The Dune grid interface is essentially meaningless
-        // for non-neighbouring "intersections".
+    const auto& face = faces_of_cell_[subindex_];
+    const auto tag = pgrid_->face_tag_[face];
+    if (tag == NNC_FACE) {
         return -1;
-    default:
-        OPM_THROW(std::runtime_error,
-                  "Unhandled face tag: " + std::to_string(tag));
+    }
+    else {
+        return 2 * static_cast<int>(tag) +
+            static_cast<int>(face.orientation());
     }
 }
 

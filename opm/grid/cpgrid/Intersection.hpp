@@ -191,12 +191,28 @@ namespace Dune
                 return geometry().type();
             }
 
-            /// Local index of codim 1 entity in the inside() entity
+            /// \brief Local index of codim 1 entity in the inside() entity
             /// where intersection is contained in.
+            ///
+            /// Note that CpGrid does not support codim-1 entities and return
+            /// the index of the face of the underlying cartesian grid assuming that
+            /// all faces are perpendicular to the axis:
+            /// For faces perpendicular to x-axis: 0 (normal points contrary to axis) 1 (else)
+            /// For faces perpendicular to x-axis: 2 (normal points contrary to axis) 3 (else)
+            /// For faces perpendicular to x-axis: 4 (normal points contrary to axis) 5 (else)
+            /// For faces not connecting neighboring elements: -1
             int indexInInside() const;
 
-            /// Local index of codim 1 entity in outside() entity
+            /// \brief Local index of codim 1 entity in outside() entity
             /// where intersection is contained in.
+            ///
+            /// Note that CpGrid does not support codim-1 entities and return
+            /// the index of the face of the underlying cartesian grid assuming that
+            /// all faces are perpendicular to the axis:
+            /// For faces perpendicular to x-axis: 0 (normal points contrary to axis) 1 (else)
+            /// For faces perpendicular to x-axis: 2 (normal points contrary to axis) 3 (else)
+            /// For faces perpendicular to x-axis: 4 (normal points contrary to axis) 5 (else)
+            /// For faces not connecting neighboring elements: -1
             int indexInOutside() const
             {
                 int in_inside = indexInInside();
