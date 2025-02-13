@@ -140,14 +140,13 @@ SCHEDULE
         for (const auto& pillar_top_bottom : lgrCOORD) {
             flatLgrCOORD.insert(flatLgrCOORD.end(), pillar_top_bottom.begin(), pillar_top_bottom.end());
         }
-
         
         eclipse_grid.set_lgr_refinement(lgr_name, flatLgrCOORD, lgrZCORN);
-     
-        Opm::UnitSystem units(1);
-        std::vector<Opm::NNCdata> vecNNC;
-        eclipse_grid.save("TEST"+lgr_name+".EGRID",false, vecNNC, units);
     }
+    
+    Opm::UnitSystem units(1);
+    std::vector<Opm::NNCdata> vecNNC;
+    eclipse_grid.save("TESTCARFIN.EGRID",false, vecNNC, units);
 }
 
 
@@ -235,11 +234,11 @@ SCHEDULE
 
 
         eclipse_grid.set_lgr_refinement(lgr_name, flatLgrCOORD, lgrZCORN);
-
-        Opm::UnitSystem units(1);
-        std::vector<Opm::NNCdata> vecNNC;
-        eclipse_grid.save("TEST"+lgr_name+".EGRID",false, vecNNC, units);
     }
+
+    Opm::UnitSystem units(1);
+    std::vector<Opm::NNCdata> vecNNC;
+    eclipse_grid.save("TESTEASYCARFIN.EGRID",false, vecNNC, units);
 
 }
 
