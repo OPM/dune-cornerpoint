@@ -58,25 +58,8 @@ void getCpGridVertexList(void* cpGridPointer, int numGlobalIds,
                          ZOLTAN_ID_PTR lids, int wgtDim,
                          float *objWgts, int *err);
 
-/// \brief Get the number of edges for one vertex of the graph of the grid.
-int getNumberOfEdgesForSpecificCell(const Dune::CpGrid& grid, int localCellId);
 
 /// \brief Get the number of edges of the graph of the grid.
-void getCpGridNumEdgesList(void *cpGridPointer, int sizeGID, int sizeLID,
-                           int numCells,
-                           ZOLTAN_ID_PTR globalID, ZOLTAN_ID_PTR localID,
-                           int *numEdges, int *err);
-
-/// \brief Get the list of edges for one cell of a grid witout wells
-template <typename ID>
-void fillNBORGIDForSpecificCellAndIncrementNeighborCounter(const Dune::CpGrid& grid, int localCellId, ID globalID, int& neighborCounter, ID& nborGID);
-
-/// \brief Get the list of edges of the graph of the grid.
-void getCpGridEdgeList(void *cpGridPointer, int sizeGID, int sizeLID,
-                       int numCells, ZOLTAN_ID_PTR globalID, ZOLTAN_ID_PTR localID,
-                       int *num_edges,
-                       ZOLTAN_ID_PTR nborGID, int *nborProc,
-                       int wgt_dim, float *ewgts, int *err);
 
 /// \brief Get a list of vertices with zero enties
 void getNullVertexList(void* cpGridPointer, int numGlobalIds,
@@ -243,19 +226,17 @@ private:
 };
 
 /// \brief Get the number of edges of the graph of the grid and the wells for one cell
-int getNumberOfEdgesForSpecificCellForGridWithWells(const CombinedGridWellGraph& graph, int localCellId);
+int getNumberOfEdgesForSpecificCell(const CombinedGridWellGraph& graph, int localCellId);
 
 /// \brief Get the list of edges and weights for one cell of a grid with wells
 template<typename ID, typename weightType>
-void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounterForGridWithWells(const CombinedGridWellGraph& graph, const int localCellId, ID globalID, int& neighborCounter, ID& nborGID, weightType *ewgts);
+void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounter(const CombinedGridWellGraph& graph, const int localCellId, ID globalID, int& neighborCounter, ID& nborGID, weightType *ewgts);
 
 #ifdef HAVE_ZOLTAN
 /// \brief Sets up the call-back functions for ZOLTAN's graph partitioning.
 /// \param zz The struct with the information for ZOLTAN.
 /// \param grid The grid to partition.
 /// \param pretendNull If true, we will pretend that the grid has zero cells.
-void setCpGridZoltanGraphFunctions(Zoltan_Struct *zz, const Dune::CpGrid& grid,
-                                   bool pretendNull=false);
 
 void setCpGridZoltanGraphFunctions(Zoltan_Struct *zz,
                                    const CombinedGridWellGraph& graph,

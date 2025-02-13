@@ -333,22 +333,25 @@ zoltanGraphPartitionGridOnRoot(const CpGrid& cpgrid,
 
     std::shared_ptr<CombinedGridWellGraph> gridAndWells;
 
-    if( wells )
-    {
-        Zoltan_Set_Param(zz,"EDGE_WEIGHT_DIM","1");
+    Zoltan_Set_Param(zz,"EDGE_WEIGHT_DIM","1");
+    if (allowDistributedWells) {
         gridAndWells.reset(new CombinedGridWellGraph(cpgrid,
-                                                       wells,
-                                                       possibleFutureConnections,
-                                                       transmissibilities,
-                                                       partitionIsEmpty,
-                                                       edgeWeightsMethod));
-        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, *gridAndWells,
-                                                    partitionIsEmpty);
+                                                     nullptr,
+                                                     {},
+                                                     transmissibilities,
+                                                     partitionIsEmpty,
+                                                     edgeWeightsMethod));
+        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, *gridAndWells, partitionIsEmpty);
+    } else {
+        gridAndWells.reset(new CombinedGridWellGraph(cpgrid,
+                                                     wells,
+                                                     possibleFutureConnections,
+                                                     transmissibilities,
+                                                     partitionIsEmpty,
+                                                     edgeWeightsMethod));
+        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, *gridAndWells, partitionIsEmpty);
     }
-    else
-    {
-        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, cpgrid, partitionIsEmpty);
-    }
+
 
     rc = Zoltan_LB_Partition(zz, /* input (all remaining fields are output) */
                              &changes,        /* 1 if partitioning was changed, 0 otherwise */
@@ -423,7 +426,11 @@ public:
         , numParts(_numParts)
         , params(param)
     {
-        if (wells) {
+        if (allowDistributedWells) {
+            const bool partitionIsEmpty = cc.rank() != root;
+            gridAndWells.reset(
+                new CombinedGridWellGraph(cpgrid, nullptr, {}, transmissibilities, partitionIsEmpty, edgeWeightsMethod));
+        } else {
             const bool partitionIsEmpty = cc.rank() != root;
             gridAndWells.reset(
                 new CombinedGridWellGraph(cpgrid, wells, possibleFutureConnections, transmissibilities, partitionIsEmpty, edgeWeightsMethod));
@@ -528,12 +535,8 @@ private:
         // all others an empty partition before loadbalancing.
         bool partitionIsEmpty = cc.rank() != root;
 
-        if (wells) {
-            Zoltan_Set_Param(zz, "EDGE_WEIGHT_DIM", "1");
-            Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, *gridAndWells, partitionIsEmpty);
-        } else {
-            Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, cpgrid, partitionIsEmpty);
-        }
+        Zoltan_Set_Param(zz, "EDGE_WEIGHT_DIM", "1");
+        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, *gridAndWells, partitionIsEmpty);
 
         rc = Zoltan_LB_Partition(zz, /* input (all remaining fields are output) */
                                  &changes, /* 1 if partitioning was changed, 0 otherwise */

@@ -88,42 +88,8 @@ void getNullNumEdgesList(void *cpGridPointer, int sizeGID, int sizeLID,
         *err = ZOLTAN_OK;
 }
 
-int getNumberOfEdgesForSpecificCell(const Dune::CpGrid& grid, int localCellId) {
-    // For the graph there is an edge only if the face has two neighbors.
-    // Therefore we need to check each face
-    int edges = 0;
-    for ( int local_face = 0; local_face < grid.numCellFaces(localCellId); ++local_face )
-    {
-        const int face = grid.cellFace(localCellId, local_face);
-        if ( grid.faceCell(face, 0) != -1 && grid.faceCell(face, 1) != -1 )
-        {
-            ++edges;
-        }
-    }
-    return edges;
-}
 
-void getCpGridNumEdgesList(void *cpGridPointer, int sizeGID, int sizeLID,
-                           int numCells,
-                           ZOLTAN_ID_PTR globalID, ZOLTAN_ID_PTR localID,
-                           int *numEdges, int *err)
-{
-    (void) globalID;
-    const Dune::CpGrid&  grid = *static_cast<const Dune::CpGrid*>(cpGridPointer);
-    if ( sizeGID != 1 || sizeLID != 1 || numCells != grid.numCells() )
-    {
-        *err = ZOLTAN_FATAL;
-        return;
-    }
-    for( int i = 0; i < numCells;  i++ )
-    {
-        numEdges[i] = getNumberOfEdgesForSpecificCell(grid, localID[i]);
-    }
-
-    *err = ZOLTAN_OK;
-}
-
-int getNumberOfEdgesForSpecificCellForGridWithWells(const CombinedGridWellGraph& graph, int localCellId) {
+int getNumberOfEdgesForSpecificCell(const CombinedGridWellGraph& graph, int localCellId) {
     const Dune::CpGrid&  grid = graph.getGrid();
     // Initial set of faces is the ones of the well completions
     auto edges = graph.getWellsGraph()[localCellId];
@@ -162,7 +128,7 @@ void getCpGridWellsNumEdgesList(void *graphPointer, int sizeGID, int sizeLID,
     }
     for( int i = 0; i < numCells;  i++ )
     {
-        numEdges[i] = getNumberOfEdgesForSpecificCellForGridWithWells(graph, localID[i]);
+        numEdges[i] = getNumberOfEdgesForSpecificCell(graph, localID[i]);
     }
     *err = ZOLTAN_OK;
 }
@@ -179,73 +145,8 @@ void getNullEdgeList(void *cpGridPointer, int sizeGID, int sizeLID,
     *err = ZOLTAN_OK;
 }
 
-template<typename ID>
-void fillNBORGIDForSpecificCellAndIncrementNeighborCounter(const Dune::CpGrid& grid, int localCellId, ID globalID, int& neighborCounter, ID& nborGID) {
-    for ( int local_face = 0 ; local_face < grid.numCellFaces(localCellId); ++local_face )
-    {
-        const int face  = grid.cellFace(localCellId, local_face);
-        int otherCell   = grid.faceCell(face, 0);
-        if ( otherCell == localCellId || otherCell == -1 )
-        {
-            otherCell = grid.faceCell(face, 1);
-            if ( otherCell == localCellId || otherCell == -1 )
-                continue;
-        }
-        nborGID[neighborCounter++] = globalID[otherCell];
-    }
-}
-
-void getCpGridEdgeList(void *cpGridPointer, int sizeGID, int sizeLID,
-                       int numCells, ZOLTAN_ID_PTR globalID, ZOLTAN_ID_PTR localID,
-                       int *numEdges,
-                       ZOLTAN_ID_PTR nborGID, int *nborProc,
-                       int wgtDim, float *ewgts, int *err)
-{
-    (void) wgtDim; (void) globalID; (void) numEdges; (void) ewgts;
-    const Dune::CpGrid&  grid = *static_cast<const Dune::CpGrid*>(cpGridPointer);
-    if ( sizeGID != 1 || sizeLID != 1 || numCells != grid.numCells() )
-    {
-        *err = ZOLTAN_FATAL;
-        return;
-    }
-#ifndef NDEBUG
-    int oldNeighborCounter = 0;
-#endif
-    int neighborCounter = 0;
-
-    for( int cell = 0; cell < numCells;  cell++ )
-    {
-        fillNBORGIDForSpecificCellAndIncrementNeighborCounter(grid, localID[cell], globalID, neighborCounter, nborGID);
-#ifndef NDEBUG
-        assert(numEdges[cell] == neighborCounter - oldNeighborCounter);
-        oldNeighborCounter = neighborCounter;
-#endif
-    }
-
-    const int myrank = grid.comm().rank();
-
-    for ( int i = 0; i < neighborCounter; ++i )
-    {
-        nborProc[i] = myrank;
-    }
-#if defined(DEBUG) && false // The index set will not be initialized here!
-    // The above relies heavily on the grid not being distributed already.
-    // Therefore we check here that all cells are owned by us.
-    GlobalLookupIndexSet<Dune::CpGrid::ParallelIndexSet>
-        globalIdxSet(grid.getCellIndexSet(),
-                     grid.numCells());
-    for ( int cell = 0; cell < numCells;  cell++ )
-    {
-        if ( globalIdxSet.pair(cell)->local().attribute() !=
-             Dune::CpGrid::ParallelIndexSet::LocalIndex::Attribute::owner )
-        {
-            *err = ZOLTAN_FATAL;
-        }
-    }
-#endif
-}
 template<typename ID, typename weightType>
-void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounterForGridWithWells(const CombinedGridWellGraph& graph, const int localCellId, ID globalID, int& neighborCounter, ID& nborGID, weightType *ewgts) {
+void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounter(const CombinedGridWellGraph& graph, const int localCellId, ID globalID, int& neighborCounter, ID& nborGID, weightType *ewgts) {
     const Dune::CpGrid&  grid = graph.getGrid();
     // First the strong edges of the well completions.
     auto wellEdges = graph.getWellsGraph()[localCellId];
@@ -310,7 +211,7 @@ void getCpGridWellsEdgeList(void *graphPointer, int sizeGID, int sizeLID,
 
     for( int cell = 0; cell < numCells;  cell++ )
     {
-        fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounterForGridWithWells(graph, localID[cell], globalID, neighborCounter, nborGID, ewgts);
+        fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounter(graph, localID[cell], globalID, neighborCounter, nborGID, ewgts);
 #ifndef NDEBUG
         assert(neighborCounter-oldNeighborCounter==numEdges[cell]);
         oldNeighborCounter = neighborCounter;
@@ -354,41 +255,24 @@ CombinedGridWellGraph::CombinedGridWellGraph(const CpGrid& grid,
         return;
     }
     wellsGraph_.resize(grid.numCells());
-    const auto& cpgdim = grid.logicalCartesianSize();
-    // create compressed lookup from cartesian.
-    std::vector<int> cartesian_to_compressed(cpgdim[0]*cpgdim[1]*cpgdim[2], -1);
+    if (wells) {
+        const auto& cpgdim = grid.logicalCartesianSize();
+        // create compressed lookup from cartesian.
+        std::vector<int> cartesian_to_compressed(cpgdim[0]*cpgdim[1]*cpgdim[2], -1);
 
-    for( int i=0; i < grid.numCells(); ++i )
-    {
-        cartesian_to_compressed[grid.globalCell()[i]] = i;
+        for( int i=0; i < grid.numCells(); ++i )
+        {
+            cartesian_to_compressed[grid.globalCell()[i]] = i;
+        }
+        // If we're not taking the wells into account here we don't init the connections
+        well_indices_.init(*wells, possibleFutureConnections, cpgdim, cartesian_to_compressed);
+        std::vector<int>().swap(cartesian_to_compressed); // free memory.
+        addCompletionSetToGraph();
     }
-    well_indices_.init(*wells, possibleFutureConnections, cpgdim, cartesian_to_compressed);
-    std::vector<int>().swap(cartesian_to_compressed); // free memory.
-    addCompletionSetToGraph();
-
     if (edgeWeightsMethod == logTransEdgeWgt)
         findMaxMinTrans();
 }
 
-void setCpGridZoltanGraphFunctions(Zoltan_Struct *zz, const Dune::CpGrid& grid,
-                                   bool pretendNull)
-{
-    Dune::CpGrid *gridPointer = const_cast<Dune::CpGrid*>(&grid);
-    if ( pretendNull )
-    {
-        Zoltan_Set_Num_Obj_Fn(zz, getNullNumCells, gridPointer);
-        Zoltan_Set_Obj_List_Fn(zz, getNullVertexList, gridPointer);
-        Zoltan_Set_Num_Edges_Multi_Fn(zz, getNullNumEdgesList, gridPointer);
-        Zoltan_Set_Edge_List_Multi_Fn(zz, getNullEdgeList, gridPointer);
-    }
-    else
-    {
-        Zoltan_Set_Num_Obj_Fn(zz, getCpGridNumCells, gridPointer);
-        Zoltan_Set_Obj_List_Fn(zz, getCpGridVertexList, gridPointer);
-        Zoltan_Set_Num_Edges_Multi_Fn(zz, getCpGridNumEdgesList, gridPointer);
-        Zoltan_Set_Edge_List_Multi_Fn(zz, getCpGridEdgeList, gridPointer);
-    }
-}
 
 void setCpGridZoltanGraphFunctions(Zoltan_Struct *zz,
                                    const CombinedGridWellGraph& graph,
@@ -414,14 +298,10 @@ void setCpGridZoltanGraphFunctions(Zoltan_Struct *zz,
 // Explicit template instantiation for METIS
 #if HAVE_METIS
 template
-void fillNBORGIDForSpecificCellAndIncrementNeighborCounter(const Dune::CpGrid&, int, int*, int&, int*& nborGID);
-template
-void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounterForGridWithWells(const CombinedGridWellGraph&, const int, int*, int&, int*&, int*);
+void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounter(const CombinedGridWellGraph&, const int, int*, int&, int*&, int*);
 
 template
-void fillNBORGIDForSpecificCellAndIncrementNeighborCounter(Dune::CpGrid const&, int, long*, int&, long*&);
-template
-void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounterForGridWithWells(Dune::cpgrid::CombinedGridWellGraph const&, int, long*, int&, long*&, long*);
+void fillNBORGIDAndWeightsForSpecificCellAndIncrementNeighborCounter(Dune::cpgrid::CombinedGridWellGraph const&, int, long*, int&, long*&, long*);
 
 #endif
 

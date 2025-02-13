@@ -129,6 +129,7 @@ BOOST_AUTO_TEST_CASE(zoltan)
         MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
 
         Dune::CpGrid grid;
+        Dune::cpgrid::CombinedGridWellGraph graph(grid, nullptr, {}, nullptr, false, Dune::EdgeWeightMethod::uniformEdgeWgt);
         std::array<int, 3> dims={{1, procs, procs}};
         std::array<double, 3> size={{ 1.0, 1.0, 1.0}};
 #ifdef ONE_TO_ALL
@@ -138,7 +139,7 @@ BOOST_AUTO_TEST_CASE(zoltan)
 
         MPI_Barrier(MPI_COMM_WORLD);
 
-        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, grid);
+        Dune::cpgrid::setCpGridZoltanGraphFunctions(zz, graph, true /*pretend empty grid, which we have since our grid is actually empty*/);
 
         BOOST_REQUIRE(grid.comm()==MPI_COMM_WORLD);
         if (myRank != 0)
