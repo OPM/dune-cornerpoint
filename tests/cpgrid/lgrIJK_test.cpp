@@ -48,8 +48,11 @@
 #include <opm/input/eclipse/Deck/Deck.hpp>
 #include <opm/input/eclipse/EclipseState/EclipseState.hpp>
 #include <opm/input/eclipse/Parser/Parser.hpp>
+#include <opm/io/eclipse/EGrid.hpp> // check if it's needed
+
 
 #include <array>
+#include <filesystem>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -242,15 +245,13 @@ SCHEDULE
     BOOST_TEST(lgr1IJK[77][1] == 4);
     BOOST_TEST(lgr1IJK[77][2] == 2);
 
-    // Assuming lgrCOORD is a vector of std::array<double, 6> with the content of COORD keyword for the LGR block
+   
     const auto [lgrCOORD, lgrZCORN] = Opm::lgrCOORDandZCORN(grid, lgr1_level, lgrCartesianIdxToCellIdx, lgr1IJK);
+    
     std::cout<< "COORD for LGR with all active cells" << std::endl;
     for (const auto& coord : lgrCOORD)
     {
-        const auto& [x1, y1, z1, x2, y2, z2] = coord;
-
-        std::cout << x1 << " " << y1 << " " << z1 << " "
-                  << x2 << " " << y2 << " " << z2 << std::endl;
+        std::cout << coord << std::endl;
     }
     std::cout<< std::endl;
 }
@@ -309,6 +310,7 @@ SCHEDULE
     const auto deck = parser.parseString(deck_string);
     Opm::EclipseState ecl_state(deck);
     Opm::EclipseGrid eclipse_grid = ecl_state.getInputGrid();
+    
     grid.processEclipseFormat(&eclipse_grid, &ecl_state, false, false, false);
 
     // Add LGR1 and update grid view
@@ -336,7 +338,7 @@ SCHEDULE
                       lgrCartesianIdxToCellIdx.size(),
                       lgr1IJK.size());
 
-    // Assuming lgrCOORD is a vector of std::array<double, 6> with the content of COORD keyword for the LGR block
+
     const auto [lgrCOORD, lgrZCORN] = Opm::lgrCOORDandZCORN(grid, lgr1_level, lgrCartesianIdxToCellIdx, lgr1IJK);
     const int nx = 8;
     const int ny = 4;
@@ -344,23 +346,21 @@ SCHEDULE
     // Pillars are ordered j*(nx+1) + i, i faster than j, i=0,...,nx, j=0, ..., ny.
     for (int j = 0;  j < ny+1; ++j) {
         for (int i = 0; i < nx+1; ++i) {
-            int pillar_idx = (j*(nx+1)) + i;
-            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx][0], i);
-            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx][1], j);
-            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx][2], nz);
-            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx][3], i);
-            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx][4], j);
-            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx][5], 0 );
+            int pillar_idx = (j*6*(nx+1)) + (6*i);
+            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx +0], i);
+            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx +1], j);
+            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx +2], nz);
+            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx +3], i);
+            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx +4], j);
+            BOOST_CHECK_EQUAL( lgrCOORD[pillar_idx +5], 0 );
         }
     }
 
     std::cout<< "COORD for LGR with all active cells" << std::endl;
     for (const auto& coord : lgrCOORD)
     {
-        const auto& [x1, y1, z1, x2, y2, z2] = coord;
 
-        std::cout << x1 << " " << y1 << " " << z1 << " "
-                  << x2 << " " << y2 << " " << z2 << std::endl;
+        std::cout << coord << std::endl;
     }
     std::cout<< std::endl;
 
@@ -531,17 +531,13 @@ SCHEDULE
     BOOST_CHECK_THROW(lgrCartesianIdxToCellIdx.at(70), std::out_of_range);
     BOOST_CHECK_THROW(lgrCartesianIdxToCellIdx.at(170), std::out_of_range);
 
-    // Assuming lgrCOORD is a vector of std::array<double, 6> with the content of COORD keyword for the LGR block
     // If a pillar within the LGR block is "inactive," its COORD values are set to
     // std::numeric_limits<double>::max() to indicate the inactive status
     const auto [lgrCOORD, lgrZCORN] = Opm::lgrCOORDandZCORN(grid, lgr1_level, lgrCartesianIdxToCellIdx, lgr1IJK);
     std::cout<< "COORD for LGR with active and inactive cells" << std::endl;
     for (const auto& coord : lgrCOORD)
     {
-        const auto& [x1, y1, z1, x2, y2, z2] = coord;
-
-        std::cout << x1 << " " << y1 << " " << z1 << " "
-                  << x2 << " " << y2 << " " << z2 << std::endl;
+        std::cout << coord << std::endl;
     }
     std::cout << std::endl;
 }
@@ -624,7 +620,6 @@ SCHEDULE
     // Accessing inactive (non-existing) cell
     BOOST_CHECK_THROW(lgrCartesianIdxToCellIdx.at(0), std::out_of_range);
 
-    // Assuming lgrCOORD is a vector of std::array<double, 6> with the content of COORD keyword for the LGR block.
     // All inactive cells, therefore lgrCOORD(...) throws an exception
     BOOST_CHECK_THROW(Opm::lgrCOORDandZCORN(grid, lgr1_level, lgrCartesianIdxToCellIdx, lgr1IJK), std::logic_error);
 }
