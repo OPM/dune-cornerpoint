@@ -57,9 +57,9 @@ lgrIJK(const Dune::CpGrid& grid, const std::string& lgr_name);
 /// @param [in] lgrCartesianIdxToCellIdx Mapping from LGR Cartesian indices to level cell indices.
 /// @param [in] lgrIJK The IJK indices corresponding to the LGR block active cells.
 /// @return A pair containing:
-///    - A std::vector<std::array<double, 6>> storing the coordinate values for each pillar.
+///    - A std::vector<double> storing the coordinate values for each pillar.
 ///    - A std::vector<double> storing the depth of each corner point of the LGR pillars.
-std::pair<std::vector<std::array<double, 6>>, std::vector<double>>
+std::pair<std::vector<double>, std::vector<double>>
 lgrCOORDandZCORN(const Dune::CpGrid& grid,
                  int level,
                  const std::unordered_map<int, int>& lgrCartesianIdxToCellIdx,
@@ -84,7 +84,7 @@ void setPillarCoordinates(int i, int j, int nx,
                           int positionIdx,
                           const Dune::cpgrid::Entity<0>& topElem,
                           const Dune::cpgrid::Entity<0>& bottomElem,
-                          std::vector<std::array<double, 6>>& lgrCOORD);
+                          std::vector<double>& lgrCOORD);
 
 
 /// @brief Processes and sets the coordinates for all four pillars of a given "(i,j) column of cells".
@@ -101,7 +101,7 @@ void setPillarCoordinates(int i, int j, int nx,
 void processPillars(int i, int j, int nx,
                     const Dune::cpgrid::Entity<0>& topElem,
                     const Dune::cpgrid::Entity<0>& bottomElem,
-                    std::vector<std::array<double, 6>>& lgrCOORD);
+                    std::vector<double>& lgrCOORD);
 } // namespace Opm
 
 #endif // OPM_CPGRIDUTILITIES_HEADER_INCLUDED

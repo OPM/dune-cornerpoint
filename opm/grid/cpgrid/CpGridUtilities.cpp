@@ -67,7 +67,7 @@ lgrIJK(const Dune::CpGrid& grid, const std::string& lgr_name)
     return std::make_pair(lgrCartesianIdxToCellIdx, lgrIJK);
 }
 
-std::pair<std::vector<std::array<double, 6>>, std::vector<double>>
+std::pair<std::vector<double>, std::vector<double>>
 lgrCOORDandZCORN(const Dune::CpGrid& grid,
                  int level,
                  const std::unordered_map<int, int>&  lgrCartesianIdxToCellIdx,
@@ -88,10 +88,7 @@ lgrCOORDandZCORN(const Dune::CpGrid& grid,
     const int nz = lgr_dim[2];
 
     // Initialize all pillars as inactive (setting COORD values to std::numeric_limits<double>::max()).
-    std::vector<std::array<double,6>> lgrCOORD((nx+1)*(ny+1));
-    for (auto& pillar : lgrCOORD) {
-        pillar.fill(std::numeric_limits<double>::max());
-    }
+    std::vector<double> lgrCOORD(6*(nx+1)*(ny+1), std::numeric_limits<double>::max());
 
     // Initialize all ZCORN as inactive (setting values to std::numeric_limits<double>::max()).
     std::vector<double> lgrZCORN(8*nx*ny*nz, std::numeric_limits<double>::max());
@@ -186,7 +183,7 @@ void setPillarCoordinates(int i, int j, int nx,
                           int topCorner, int bottomCorner, int positionIdx,
                           const Dune::cpgrid::Entity<0>& topElem,
                           const Dune::cpgrid::Entity<0>& bottomElem,
-                          std::vector<std::array<double, 6>>& lgrCOORD)
+                          std::vector<double>& lgrCOORD)
 {
     // positionIdx (0, 1, 2, or 3) is used to distinguish the 4 corner pillars in a cell column.
     //
@@ -202,21 +199,25 @@ void setPillarCoordinates(int i, int j, int nx,
     // - positionIdx / 2 determines the position at the y-axis (0 for j, 1 for j+1).
     // - positionIdx % 2 determines the position at the x-axis (0 for i, 1 for i+1).
 
-    const int pillar = ((j + positionIdx / 2) * (nx + 1)) + (i + positionIdx % 2);
+    const int pillar = ((j + positionIdx / 2) *6* (nx + 1)) + 6*(i + positionIdx % 2);
 
     // Top pillar's COORD values
     const auto& top_point = topElem.subEntity<3>(topCorner).geometry().center();
-    std::copy(top_point.begin(), top_point.end(), lgrCOORD[pillar].begin());
+    lgrCOORD[pillar] = top_point[0];
+    lgrCOORD[pillar+1] = top_point[1];
+    lgrCOORD[pillar+2] = top_point[2];
 
     // Bottom pillar's COORD values
     const auto& bottom_point = bottomElem.subEntity<3>(bottomCorner).geometry().center();
-    std::copy(bottom_point.begin(), bottom_point.end(), lgrCOORD[pillar].begin() + 3);
+    lgrCOORD[pillar+3] = bottom_point[0];
+    lgrCOORD[pillar+4] = bottom_point[1];
+    lgrCOORD[pillar+5] = bottom_point[2];
 }
 
 void processPillars(int i, int j, int nx,
                     const Dune::cpgrid::Entity<0>& topElem,
                     const Dune::cpgrid::Entity<0>& bottomElem,
-                    std::vector<std::array<double, 6>>& lgrCOORD)
+                    std::vector<double>& lgrCOORD)
 {
     // Recall that a cell has 8 corners:
     //        6 --- 7

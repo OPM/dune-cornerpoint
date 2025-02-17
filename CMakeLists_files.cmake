@@ -117,6 +117,7 @@ if(Boost_VERSION_STRING VERSION_GREATER 1.53)
 	  tests/cpgrid/inactiveCell_lgr_test.cpp
 	  tests/cpgrid/lgr_cartesian_idx_test.cpp
 	  tests/cpgrid/lgrIJK_test.cpp
+	  tests/cpgrid/lgr_coord_zcorn_test.cpp
 	  tests/cpgrid/lookUpCellCentroid_cpgrid_test.cpp
 	  tests/cpgrid/lookupdataCpGrid_test.cpp
 	  tests/cpgrid/replace_lgr1_corner_idx_by_lgr2_corner_idx_test.cpp
