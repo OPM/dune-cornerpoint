@@ -58,6 +58,7 @@ list (APPEND MAIN_SOURCE_FILES
   opm/grid/cornerpoint_grid.c
   opm/grid/cpgpreprocess/facetopology.c
   opm/grid/cpgpreprocess/geometry.c
+  opm/grid/cpgpreprocess/make_edge_conformal.cpp
   opm/grid/cpgpreprocess/preprocess.c
   opm/grid/cpgpreprocess/uniquepoints.c
   opm/grid/UnstructuredGrid.c
@@ -245,6 +246,7 @@ list (APPEND PUBLIC_HEADER_FILES
   opm/grid/cornerpoint_grid.h
   opm/grid/cpgpreprocess/facetopology.h
   opm/grid/cpgpreprocess/geometry.h
+  opm/grid/cpgpreprocess/make_edge_conformal.hpp
   opm/grid/cpgpreprocess/preprocess.h
   opm/grid/cpgpreprocess/uniquepoints.h
   opm/grid/transmissibility/trans_tpfa.h

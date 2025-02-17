@@ -41,6 +41,7 @@
  */
 
 #include <opm/grid/UnstructuredGrid.h>
+
 #include <opm/grid/cpgpreprocess/preprocess.h>
 
 #ifdef __cplusplus
@@ -63,13 +64,21 @@ extern "C" {
      *
      * @param[in] tol Absolute tolerance of node-coincidence.
      *
+     * @param[in] edge_conformal Whether or not to create an edge-conformal
+     *                grid structure.  This is an experimental feature,
+     *                aimed at supporting geo-mechanical workflows, that
+     *                should typically not be used in production runs of
+     *                traditional reservoir simulations.  Non-zero to enable
+     *                edge-conformal processing, zero to disable this mode.
+     *
      * @return Fully formed grid data structure that manages the grid defined by
      * the input corner-point specification. Must be destroyed using function
      * destroy_grid().
      */
     struct UnstructuredGrid *
-    create_grid_cornerpoint(const struct grdecl *in, double tol);
-
+    create_grid_cornerpoint(const struct grdecl *in,
+                            double tol,
+                            int edge_conformal);
 
     /**
      * Compute derived geometric primitives in a grid.

@@ -79,8 +79,9 @@ BOOST_AUTO_TEST_CASE(Equal) {
     BOOST_CHECK( deck1.hasKeyword("ZCORN") );
     BOOST_CHECK( deck1.hasKeyword("COORD") );
 
-    Opm::GridManager grid1(es1.getInputGrid());
-    Opm::GridManager grid2(es2.getInputGrid());
+    const bool edge_conformal = false;
+    Opm::GridManager grid1(es1.getInputGrid(), edge_conformal);
+    Opm::GridManager grid2(es2.getInputGrid(), edge_conformal);
 
     const UnstructuredGrid* cgrid1 = grid1.c_grid();
     const UnstructuredGrid* cgrid2 = grid2.c_grid();
@@ -120,7 +121,7 @@ BOOST_AUTO_TEST_CASE(EqualEclipseGrid) {
         g.actnum = actnum.getIntData().data();
 
 
-        cgrid2 = create_grid_cornerpoint(&g , 0.0);
+        cgrid2 = create_grid_cornerpoint(&g, 0.0, /* edge_conformal = */ false);
         if (!cgrid2)
             throw std::runtime_error("Failed to construct grid.");
     }

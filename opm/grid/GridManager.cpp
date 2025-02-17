@@ -40,18 +40,20 @@ namespace Opm
 
 #if HAVE_ECL_INPUT
     /// Construct a 3d corner-point grid from a deck.
-    GridManager::GridManager(const Opm::EclipseGrid& inputGrid)
+    GridManager::GridManager(const Opm::EclipseGrid& inputGrid,
+                             const bool edge_conformal)
         : ug_(0)
     {
-        initFromEclipseGrid(inputGrid, std::vector<double>());
+        initFromEclipseGrid(inputGrid, std::vector<double>(), edge_conformal);
     }
 
 
     GridManager::GridManager(const Opm::EclipseGrid& inputGrid,
-                             const std::vector<double>& poreVolumes)
+                             const std::vector<double>& poreVolumes,
+                             const bool edge_conformal)
         : ug_(0)
     {
-        initFromEclipseGrid(inputGrid, poreVolumes);
+        initFromEclipseGrid(inputGrid, poreVolumes, edge_conformal);
     }
 #endif
 
@@ -133,9 +135,10 @@ namespace Opm
 #if HAVE_ECL_INPUT
     // Construct corner-point grid from EclipseGrid.
     void GridManager::initFromEclipseGrid(const Opm::EclipseGrid& inputGrid,
-                                          const std::vector<double>& poreVolumes)
+                                          const std::vector<double>& poreVolumes,
+                                          const bool edge_conformal)
     {
-        struct grdecl g;
+        grdecl g{};
 
         g.dims[0] = inputGrid.getNX();
         g.dims[1] = inputGrid.getNY();
@@ -166,7 +169,7 @@ namespace Opm
                        actnum, opmfil, zcorn.data());
         }
 
-        ug_ = create_grid_cornerpoint(&g, z_tolerance);
+        ug_ = create_grid_cornerpoint(&g, z_tolerance, edge_conformal);
         if (!ug_) {
             OPM_THROW(std::runtime_error, "Failed to construct grid.");
         }
